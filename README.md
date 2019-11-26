@@ -13,3 +13,30 @@ Python install) and run:
 ```
 python3 setup.py install --prefix=~/.local
 ```
+
+# Commands
+
+The package provides commands for manipulating FLOPO data. The usual pipeline
+consists of calls like this:
+```
+flopo-convert -f csv -t webanno-tsv -i kiky.conll.csv -O webanno/
+flopo-finer -i kiky.conll.csv -o kiky.conll.ner.csv
+flopo-annotate -a \
+	NamedEntity:kiky.conll.ner.csv \
+	Quote:kiky.conll.quotes.csv \
+	Metaphor:kiky.conll.metaphors.csv \
+	Hedging:kiky.conll.hedging.csv \
+	-- webanno/
+```
+
+## `flopo-convert`
+
+TODO
+
+## `flopo-finer`
+
+TODO
+
+## `flopo-annotate`
+
+TODO
