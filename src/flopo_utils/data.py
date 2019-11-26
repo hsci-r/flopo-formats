@@ -35,6 +35,9 @@ class Corpus:
     def __setitem__(self, key, val):
         self.documents[key] = val
 
+    def items(self):
+        return self.documents.items()
+
     def __iter__(self):
         return self.documents.__iter__()
 

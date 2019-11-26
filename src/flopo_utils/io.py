@@ -2,6 +2,8 @@ import csv
 import re
 import warnings
 
+from .data import Corpus, Document, Sentence, Token
+
 # TODO convert to a library, divide into smaller modules
 
 WEBANNO_LAYERS = {
@@ -26,7 +28,7 @@ WEBANNO_FEATURES_INV = { val: key for key, val in WEBANNO_FEATURES.items() }
 
 HEADER_PATTERN = re.compile('^#([^|]+)\|(.*)$')
 
-class CoNLLImporter:
+class CoNLLCorpusReader:
     PATTERN_SPACES_AFTER = re.compile('SpacesAfter=([^|]*)')
     SCHEMA = [('Lemma', ('value',)),
               ('POS', ('coarseValue', 'PosValue')),
@@ -52,14 +54,14 @@ class CoNLLImporter:
     def _finalize_document(self, line):
         self._finalize_sentence(line)
         if self.sentences:
-            doc = Document(CoNLLImporter.SCHEMA, self.sentences)
+            doc = Document(CoNLLCorpusReader.SCHEMA, self.sentences)
             self.corpus.documents[self.doc_id] = doc
         self.sentences = []
         self.doc_id = line['articleId'] if line is not None else None
         self.idx = 0
 
     def _determine_space_after(self, line):
-        m = CoNLLImporter.PATTERN_SPACES_AFTER.match(line['misc'])
+        m = CoNLLCorpusReader.PATTERN_SPACES_AFTER.match(line['misc'])
         if m is not None:
             return m.group(1).replace('\\n', '\n')
         elif 'SpaceAfter=No' in line['misc']:
@@ -183,6 +185,10 @@ def load_webanno_tsv(filename):
                         c += 1
                     spans[layer].append((tok_id, tok_id, values))
     return Document(schema, sentences)
+
+
+def read_conll(filename):
+    return CoNLLCorpusReader().read(filename)
 
 
 def read_annotation_from_csv(corpus, filename, annotation_name):
