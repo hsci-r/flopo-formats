@@ -109,6 +109,106 @@ class CoNLLCorpusReader:
         return self.corpus
 
 
+class WebAnnoTSVReader:
+    def __init__(self):
+        self.schema = []
+        self.sentences = []
+        self.tokens = []
+        self.last_span = None
+        self.spans = None
+
+    def _finalize_last_span(self, layer):
+        sp = self.last_span[layer]
+        if sp['id'] is not None:
+            self.spans[layer].append((sp['start'], sp['end'], sp['values']))
+        self.last_span[layer] = { 'id' : None, 'start' : None, 'end' : None,
+                                  'values' : None }
+
+    def _finalize_sentence(self):
+        # fix space after
+        # TODO not quite correct
+        for i, t in enumerate(self.tokens[1:], 1):
+            if t.start_idx == self.tokens[i-1].end_idx:
+                self.tokens[i-1].space_after = ''
+        for layer, features in self.schema:
+            self._finalize_last_span(layer)
+        self.sentences.append(Sentence(self.tokens, self.spans))
+        self.tokens = []
+        self.spans = { layer: [] for layer, features in self.schema }
+
+    def read(self, filename):
+        with open(filename) as fp:
+            line = fp.readline()        # first line -- format declaration
+            while line:
+                line = fp.readline().strip()
+                m = HEADER_PATTERN.match(line)
+                if m is not None:
+                    self.schema.append((
+                        WEBANNO_LAYERS_INV[m.group(1)],
+                        tuple(m.group(2).split('|')) if m.group(2) else ('',)))
+            #print(schema)
+            line = fp.readline()
+            self.spans = { layer: [] for layer, features in self.schema }
+            self.last_span = { layer: { 'id' : None, 'start' : None,
+                                        'end' : None, 'values' : None } \
+                               for layer, features in self.schema }
+            for line in fp:
+                line = line.rstrip()
+                if not line:
+                    self._finalize_sentence()
+                elif line.startswith('#'):
+                    continue
+                else:
+                    cols = line.split('\t')
+                    tok_id = int(cols[0].split('-')[1])
+                    start_idx, end_idx = cols[1].split('-')
+                    string = cols[2]
+                    # TODO space after
+                    t = Token(tok_id, start_idx, end_idx, string)
+                    self.tokens.append(t)
+                    c = 3
+                    for layer, features in self.schema:
+                        values, span_ids = {}, {}
+                        for f in features:
+                            m = SPAN_PATTERN.match(cols[c])
+                            if m is not None:
+                                if m.group(2):
+                                    values[f], span_ids[f] = m.group(1), m.group(3)
+                                else:
+                                    values[f], span_ids[f] = m.group(1), None
+                            else:
+                                raise RuntimeError('This shouldn\'t happen')
+                            c += 1
+                        # add span (TODO refactor):
+                        # - add as a single-span annotation if no span ID
+                        # - create a new multi-token span if there is no current
+                        # - add to current multi-token span if conditions satisfied
+                        #   - span_id 
+                        #   - feature values match
+                        span_ids_list = list(span_ids.values())
+                        span_id = span_ids_list[0]
+                        if not all(x == span_id for x in span_ids_list):
+                            raise Exception(\
+                                'Differing span IDs in a multi-token annotation')
+                        if span_id is None:
+                            self._finalize_last_span(layer)
+                            self.spans[layer].append((tok_id, tok_id, values))
+                        elif self.last_span[layer]['id'] != span_id:
+                            self._finalize_last_span(layer)
+                            self.last_span[layer]['id'] = span_id
+                            self.last_span[layer]['start'] = tok_id
+                            self.last_span[layer]['end'] = tok_id
+                            self.last_span[layer]['values'] = values
+                        elif self.last_span[layer]['id'] == span_id \
+                                and self.last_span[layer]['end']+1 == tok_id \
+                                and self.last_span[layer]['values'] == values:
+                            self.last_span[layer]['end'] = tok_id
+                        else:
+                            raise RuntimeError('This shouldn\'t happen')
+            self._finalize_sentence()
+        return Document(self.schema, self.sentences)
+
+
 def save_webanno_tsv(document, filename):
     last_span_id = 1
     with open(filename, 'w+') as fp:
@@ -148,101 +248,12 @@ def save_webanno_tsv(document, filename):
                     t.string] + \
                     [columns[layer+'.'+f][i] for layer, features in document.schema for f in features])+'\t\n')
 
-
-def load_webanno_tsv(filename):
-    # FIXME is there an empty line at the end of the file?
-    # if not, we might be losing the last sentence!
-
-    def _finalize_last_span(layer, last_spans, spans):
-        sp = last_spans[layer]
-        if sp['id'] is not None:
-            spans[layer].append((sp['start'], sp['end'], sp['values']))
-            print(sp['start'], sp['end'], sp['values'])
-        last_spans[layer] = { 'id' : None, 'start' : None, 'end' : None,
-                              'values' : None }
-
-    schema, sentences = [], []
-    with open(filename) as fp:
-        line = fp.readline()        # first line -- format declaration
-        while line:
-            line = fp.readline().strip()
-            m = HEADER_PATTERN.match(line)
-            if m is not None:
-                schema.append((
-                    WEBANNO_LAYERS_INV[m.group(1)],
-                    tuple(m.group(2).split('|')) if m.group(2) else ('',)))
-        #print(schema)
-        line = fp.readline()
-        tokens = []
-        spans = { layer: [] for layer, features in schema }
-        last_span = { layer: { 'id' : None, 'start' : None, 'end' : None,
-                                'values' : None } \
-                      for layer, features in schema }
-        for line in fp:
-            line = line.rstrip()
-            if not line:
-                # fix space after
-                # TODO not quite correct
-                for i, t in enumerate(tokens[1:], 1):
-                    if t.start_idx == tokens[i-1].end_idx:
-                        tokens[i-1].space_after = ''
-                _finalize_last_span(layer, last_span, spans)
-                sentences.append(Sentence(tokens, spans))
-                tokens, spans = [], { layer: [] for layer, features in schema }
-            elif line.startswith('#'):
-                continue
-            else:
-                cols = line.split('\t')
-                tok_id = int(cols[0].split('-')[1])
-                start_idx, end_idx = cols[1].split('-')
-                string = cols[2]
-                # TODO space after
-                t = Token(tok_id, start_idx, end_idx, string)
-                tokens.append(t)
-                c = 3
-                for layer, features in schema:
-                    values, span_ids = {}, {}
-                    for f in features:
-                        m = SPAN_PATTERN.match(cols[c])
-                        if m is not None:
-                            if m.group(2):
-                                values[f], span_ids[f] = m.group(1), m.group(3)
-                            else:
-                                values[f], span_ids[f] = m.group(1), None
-                        else:
-                            raise RuntimeError('This shouldn\'t happen')
-                        c += 1
-                    # add span (TODO refactor):
-                    # - add as a single-span annotation if no span ID
-                    # - create a new multi-token span if there is no current
-                    # - add to current multi-token span if conditions satisfied
-                    #   - span_id 
-                    #   - feature values match
-                    span_ids_list = list(span_ids.values())
-                    span_id = span_ids_list[0]
-                    if not all(x == span_id for x in span_ids_list):
-                        raise Exception(\
-                            'Differing span IDs in a multi-token annotation')
-                    if span_id is None:
-                        _finalize_last_span(layer, last_span, spans)
-                        spans[layer].append((tok_id, tok_id, values))
-                    elif last_span[layer]['id'] != span_id:
-                        _finalize_last_span(layer, last_span, spans)
-                        last_span[layer]['id'] = span_id
-                        last_span[layer]['start'] = tok_id
-                        last_span[layer]['end'] = tok_id
-                        last_span[layer]['values'] = values
-                    elif last_span[layer]['id'] == span_id \
-                            and last_span[layer]['end']+1 == tok_id \
-                            and last_span[layer]['values'] == values:
-                        last_span[layer]['end'] = tok_id
-                    else:
-                        raise RuntimeError('This shouldn\'t happen')
-    return Document(schema, sentences)
-
-
 def read_conll(filename):
     return CoNLLCorpusReader().read(filename)
+
+
+def load_webanno_tsv(filename):
+    return WebAnnoTSVReader().read(filename)
 
 
 EXCLUDE_CSV_KEYS = { 'articleId', 'paragraphId', 'sentenceId', 'wordId',
