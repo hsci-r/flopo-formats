@@ -105,6 +105,7 @@ class CoNLLCorpusReader:
                 elif line['sentenceId'] != self.sen_id:
                     self._finalize_sentence(line)
                 self._read_token(line)
+            self._finalize_document(None)
         return self.corpus
 
 
