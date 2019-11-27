@@ -20,7 +20,7 @@ The package provides commands for manipulating FLOPO data. The usual pipeline
 consists of calls like this:
 ```
 flopo-convert -f csv -t webanno-tsv -i kiky.conll.csv -O webanno/
-flopo-finer -i kiky.conll.csv -o kiky.conll.ner.csv
+flopo-finer -i kiky.conll.csv -o kiky.ner.csv
 flopo-annotate -a \
 	NamedEntity:kiky.ner.csv \
 	Quote:kiky.quotes.csv \
