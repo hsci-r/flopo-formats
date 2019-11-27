@@ -22,10 +22,10 @@ consists of calls like this:
 flopo-convert -f csv -t webanno-tsv -i kiky.conll.csv -O webanno/
 flopo-finer -i kiky.conll.csv -o kiky.conll.ner.csv
 flopo-annotate -a \
-	NamedEntity:kiky.conll.ner.csv \
-	Quote:kiky.conll.quotes.csv \
-	Metaphor:kiky.conll.metaphors.csv \
-	Hedging:kiky.conll.hedging.csv \
+	NamedEntity:kiky.ner.csv \
+	Quote:kiky.quotes.csv \
+	Metaphor:kiky.metaphors.csv \
+	Hedging:kiky.hedging.csv \
 	-- webanno/
 ```
 
