@@ -27,6 +27,7 @@ WEBANNO_FEATURES_INV = { val: key for key, val in WEBANNO_FEATURES.items() }
 
 
 HEADER_PATTERN = re.compile('^#([^|]+)\|(.*)$')
+SPAN_PATTERN = re.compile('([^[]+)(\[([0-9]+)\])?')
 
 class CoNLLCorpusReader:
     PATTERN_SPACES_AFTER = re.compile('SpacesAfter=([^|]*)')
@@ -71,6 +72,10 @@ class CoNLLCorpusReader:
 
     def _read_token(self, line):
         space_after = self._determine_space_after(line)
+        # FIXME for now, only distinguish between space or no space
+        # (other types cause bugs further in the pipeline)
+        if space_after:
+            space_after = ' '
         t = Token(
             line['wordId'],
             self.idx,
@@ -144,6 +149,17 @@ def save_webanno_tsv(document, filename):
 
 
 def load_webanno_tsv(filename):
+    # FIXME is there an empty line at the end of the file?
+    # if not, we might be losing the last sentence!
+
+    def _finalize_last_span(layer, last_spans, spans):
+        sp = last_spans[layer]
+        if sp['id'] is not None:
+            spans[layer].append((sp['start'], sp['end'], sp['values']))
+            print(sp['start'], sp['end'], sp['values'])
+        last_spans[layer] = { 'id' : None, 'start' : None, 'end' : None,
+                              'values' : None }
+
     schema, sentences = [], []
     with open(filename) as fp:
         line = fp.readline()        # first line -- format declaration
@@ -156,7 +172,11 @@ def load_webanno_tsv(filename):
                     tuple(m.group(2).split('|')) if m.group(2) else ('',)))
         #print(schema)
         line = fp.readline()
-        tokens, spans = [], { layer: [] for layer, features in schema }
+        tokens = []
+        spans = { layer: [] for layer, features in schema }
+        last_span = { layer: { 'id' : None, 'start' : None, 'end' : None,
+                                'values' : None } \
+                      for layer, features in schema }
         for line in fp:
             line = line.rstrip()
             if not line:
@@ -165,6 +185,7 @@ def load_webanno_tsv(filename):
                 for i, t in enumerate(tokens[1:], 1):
                     if t.start_idx == tokens[i-1].end_idx:
                         tokens[i-1].space_after = ''
+                _finalize_last_span(layer, last_span, spans)
                 sentences.append(Sentence(tokens, spans))
                 tokens, spans = [], { layer: [] for layer, features in schema }
             elif line.startswith('#'):
@@ -179,11 +200,43 @@ def load_webanno_tsv(filename):
                 tokens.append(t)
                 c = 3
                 for layer, features in schema:
-                    values = {}
+                    values, span_ids = {}, {}
                     for f in features:
-                        values[f] = cols[c]
+                        m = SPAN_PATTERN.match(cols[c])
+                        if m is not None:
+                            if m.group(2):
+                                values[f], span_ids[f] = m.group(1), m.group(3)
+                            else:
+                                values[f], span_ids[f] = m.group(1), None
+                        else:
+                            raise RuntimeError('This shouldn\'t happen')
                         c += 1
-                    spans[layer].append((tok_id, tok_id, values))
+                    # add span (TODO refactor):
+                    # - add as a single-span annotation if no span ID
+                    # - create a new multi-token span if there is no current
+                    # - add to current multi-token span if conditions satisfied
+                    #   - span_id 
+                    #   - feature values match
+                    span_ids_list = list(span_ids.values())
+                    span_id = span_ids_list[0]
+                    if not all(x == span_id for x in span_ids_list):
+                        raise Exception(\
+                            'Differing span IDs in a multi-token annotation')
+                    if span_id is None:
+                        _finalize_last_span(layer, last_span, spans)
+                        spans[layer].append((tok_id, tok_id, values))
+                    elif last_span[layer]['id'] != span_id:
+                        _finalize_last_span(layer, last_span, spans)
+                        last_span[layer]['id'] = span_id
+                        last_span[layer]['start'] = tok_id
+                        last_span[layer]['end'] = tok_id
+                        last_span[layer]['values'] = values
+                    elif last_span[layer]['id'] == span_id \
+                            and last_span[layer]['end']+1 == tok_id \
+                            and last_span[layer]['values'] == values:
+                        last_span[layer]['end'] = tok_id
+                    else:
+                        raise RuntimeError('This shouldn\'t happen')
     return Document(schema, sentences)
 
 
@@ -191,12 +244,16 @@ def read_conll(filename):
     return CoNLLCorpusReader().read(filename)
 
 
+EXCLUDE_CSV_KEYS = { 'articleId', 'paragraphId', 'sentenceId', 'wordId',
+                     'startWordId', 'endWordId' }
+
+
 def read_annotation_from_csv(corpus, filename, annotation_name):
     with open(filename) as fp:
         reader = csv.DictReader(fp)
+        keys = [k for k in reader.fieldnames if k not in EXCLUDE_CSV_KEYS]
         layer = (annotation_name,
-                 tuple(reader.fieldnames[4:]) if len(reader.fieldnames) >= 5 \
-                 else ('',))
+                 tuple(keys) if keys else ('',))
         for doc_id in corpus.documents:
             corpus.documents[doc_id].schema.append(layer)
             for s in corpus.documents[doc_id].sentences:
@@ -206,15 +263,28 @@ def read_annotation_from_csv(corpus, filename, annotation_name):
             if doc_id not in corpus.documents:
                 continue
             s_id = int(line['sentenceId'])-1
-            w_id = int(line['wordId'])
+            start_w_id, end_w_id = None, None
+            if 'startWordId' in line and 'endWordId' in line:
+                start_w_id = int(line['startWordId'])
+                end_w_id = int(line['endWordId'])
+            elif 'wordId' in line:
+                start_w_id = int(line['wordId'])
+                end_w_id = int(line['wordId'])
+            else:
+                raise Exception('No word ID')
             try:
                 if '' in layer[1]:
                     corpus.documents[doc_id].sentences[s_id].spans[layer[0]].append(
-                        (w_id, w_id, { '' : '*' }))
+                        (start_w_id, end_w_id, { '' : '*' }))
                 else:
                     corpus.documents[doc_id].sentences[s_id].spans[layer[0]].append(
-                        (w_id, w_id, { key : line[key] for key in layer[1] }))
+                        (start_w_id, end_w_id, 
+                         { key : line[key] for key in line \
+                               if key not in EXCLUDE_CSV_KEYS }))
             except Exception:
-                warnings.warn('articleId={articleId} sentenceId={sentenceId} '
-                              'wordId={wordId} failed'.format(**line))
+                warnings.warn(
+                    'articleId={} sentenceId={} '
+                    'start_w_id={} end_w_id={} failed'\
+                    .format(line['articleId'], line['sentenceId'],
+                            start_w_id, end_w_id))
 
