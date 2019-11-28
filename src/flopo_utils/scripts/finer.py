@@ -20,6 +20,7 @@ def parse_arguments():
     parser = argparse.ArgumentParser()
     parser.add_argument('-i', '--input-file')
     parser.add_argument('-o', '--output-file')
+    parser.add_argument('--remote', action='store_true')
     parser.add_argument(\
         '-L', '--logging', default='WARNING',
         choices=['DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL'])
@@ -38,7 +39,7 @@ def main():
         sentences = [[t.string for t in s.tokens] for s in doc.sentences]
         annotations.append((
             doc_id,
-            flopo_utils.wrappers.finer.annotate(sentences)))
+            flopo_utils.wrappers.finer.annotate(sentences, args.remote)))
         logging.info('Processing document: {} ({}/{})'\
                      .format(doc_id, i, len(corpus)))
     write_annotations(annotations, args.output_file)
