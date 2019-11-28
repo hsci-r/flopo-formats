@@ -4,7 +4,7 @@ import os.path
 
 from flopo_utils.data import Corpus
 from flopo_utils.io import \
-    read_annotation_from_csv, load_webanno_tsv, save_webanno_tsv
+    load_annotation_from_csv, load_webanno_tsv, save_webanno_tsv
 
 
 def load_corpus(corpus_dir):
@@ -38,7 +38,7 @@ def main():
     for a in args.annotations:
         layer, filename = parse_annotation_source(a)
         print(layer, filename)
-        read_annotation_from_csv(corpus, filename, layer)
+        load_annotation_from_csv(corpus, filename, layer)
     for doc_id, doc in corpus.items():
         save_webanno_tsv(doc, os.path.join(args.corpus_dir, doc_id))
 

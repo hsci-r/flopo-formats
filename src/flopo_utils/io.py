@@ -4,7 +4,6 @@ import warnings
 
 from .data import Corpus, Document, Sentence, Token
 
-# TODO convert to a library, divide into smaller modules
 
 WEBANNO_LAYERS = {
     'Lemma' :'T_SP=de.tudarmstadt.ukp.dkpro.core.api.segmentation.type.Lemma',
@@ -96,16 +95,15 @@ class CoNLLCorpusReader:
         self.idx += len(line['word']) + len(space_after)
 
 
-    def read(self, filename):
-        with open(filename) as fp:
-            reader = csv.DictReader(fp)
-            for line in reader:
-                if line['articleId'] != self.doc_id:
-                    self._finalize_document(line)
-                elif line['sentenceId'] != self.sen_id:
-                    self._finalize_sentence(line)
-                self._read_token(line)
-            self._finalize_document(None)
+    def read(self, fp):
+        reader = csv.DictReader(fp)
+        for line in reader:
+            if line['articleId'] != self.doc_id:
+                self._finalize_document(line)
+            elif line['sentenceId'] != self.sen_id:
+                self._finalize_sentence(line)
+            self._read_token(line)
+        self._finalize_document(None)
         return self.corpus
 
 
@@ -136,167 +134,177 @@ class WebAnnoTSVReader:
         self.tokens = []
         self.spans = { layer: [] for layer, features in self.schema }
 
-    def read(self, filename):
-        with open(filename) as fp:
-            line = fp.readline()        # first line -- format declaration
-            while line:
-                line = fp.readline().strip()
-                m = HEADER_PATTERN.match(line)
-                if m is not None:
-                    self.schema.append((
-                        WEBANNO_LAYERS_INV[m.group(1)],
-                        tuple(m.group(2).split('|')) if m.group(2) else ('',)))
-            #print(schema)
-            line = fp.readline()
-            self.spans = { layer: [] for layer, features in self.schema }
-            self.last_span = { layer: { 'id' : None, 'start' : None,
-                                        'end' : None, 'values' : None } \
-                               for layer, features in self.schema }
-            for line in fp:
-                line = line.rstrip()
-                if not line:
-                    self._finalize_sentence()
-                elif line.startswith('#'):
-                    continue
-                else:
-                    cols = line.split('\t')
-                    tok_id = int(cols[0].split('-')[1])
-                    start_idx, end_idx = cols[1].split('-')
-                    string = cols[2]
-                    # TODO space after
-                    t = Token(tok_id, start_idx, end_idx, string)
-                    self.tokens.append(t)
-                    c = 3
-                    for layer, features in self.schema:
-                        values, span_ids = {}, {}
-                        for f in features:
-                            m = SPAN_PATTERN.match(cols[c])
-                            if m is not None:
-                                if m.group(2):
-                                    values[f], span_ids[f] = m.group(1), m.group(3)
-                                else:
-                                    values[f], span_ids[f] = m.group(1), None
+    def read(self, fp):
+        line = fp.readline()        # first line -- format declaration
+        while line:
+            line = fp.readline().strip()
+            m = HEADER_PATTERN.match(line)
+            if m is not None:
+                self.schema.append((
+                    WEBANNO_LAYERS_INV[m.group(1)],
+                    tuple(m.group(2).split('|')) if m.group(2) else ('',)))
+        #print(schema)
+        line = fp.readline()
+        self.spans = { layer: [] for layer, features in self.schema }
+        self.last_span = { layer: { 'id' : None, 'start' : None,
+                                    'end' : None, 'values' : None } \
+                           for layer, features in self.schema }
+        for line in fp:
+            line = line.rstrip()
+            if not line:
+                self._finalize_sentence()
+            elif line.startswith('#'):
+                continue
+            else:
+                cols = line.split('\t')
+                tok_id = int(cols[0].split('-')[1])
+                start_idx, end_idx = cols[1].split('-')
+                string = cols[2]
+                # TODO space after
+                t = Token(tok_id, start_idx, end_idx, string)
+                self.tokens.append(t)
+                c = 3
+                for layer, features in self.schema:
+                    values, span_ids = {}, {}
+                    for f in features:
+                        m = SPAN_PATTERN.match(cols[c])
+                        if m is not None:
+                            if m.group(2):
+                                values[f], span_ids[f] = m.group(1), m.group(3)
                             else:
-                                raise RuntimeError('This shouldn\'t happen')
-                            c += 1
-                        # add span (TODO refactor):
-                        # - add as a single-span annotation if no span ID
-                        # - create a new multi-token span if there is no current
-                        # - add to current multi-token span if conditions satisfied
-                        #   - span_id 
-                        #   - feature values match
-                        span_ids_list = list(span_ids.values())
-                        span_id = span_ids_list[0]
-                        if not all(x == span_id for x in span_ids_list):
-                            raise Exception(\
-                                'Differing span IDs in a multi-token annotation')
-                        if span_id is None:
-                            self._finalize_last_span(layer)
-                            self.spans[layer].append((tok_id, tok_id, values))
-                        elif self.last_span[layer]['id'] != span_id:
-                            self._finalize_last_span(layer)
-                            self.last_span[layer]['id'] = span_id
-                            self.last_span[layer]['start'] = tok_id
-                            self.last_span[layer]['end'] = tok_id
-                            self.last_span[layer]['values'] = values
-                        elif self.last_span[layer]['id'] == span_id \
-                                and self.last_span[layer]['end']+1 == tok_id \
-                                and self.last_span[layer]['values'] == values:
-                            self.last_span[layer]['end'] = tok_id
+                                values[f], span_ids[f] = m.group(1), None
                         else:
                             raise RuntimeError('This shouldn\'t happen')
-            self._finalize_sentence()
+                        c += 1
+                    # add span (TODO refactor):
+                    # - add as a single-span annotation if no span ID
+                    # - create a new multi-token span if there is no current
+                    # - add to current multi-token span if conditions satisfied
+                    #   - span_id 
+                    #   - feature values match
+                    span_ids_list = list(span_ids.values())
+                    span_id = span_ids_list[0]
+                    if not all(x == span_id for x in span_ids_list):
+                        raise Exception(\
+                            'Differing span IDs in a multi-token annotation')
+                    if span_id is None:
+                        self._finalize_last_span(layer)
+                        self.spans[layer].append((tok_id, tok_id, values))
+                    elif self.last_span[layer]['id'] != span_id:
+                        self._finalize_last_span(layer)
+                        self.last_span[layer]['id'] = span_id
+                        self.last_span[layer]['start'] = tok_id
+                        self.last_span[layer]['end'] = tok_id
+                        self.last_span[layer]['values'] = values
+                    elif self.last_span[layer]['id'] == span_id \
+                            and self.last_span[layer]['end']+1 == tok_id \
+                            and self.last_span[layer]['values'] == values:
+                        self.last_span[layer]['end'] = tok_id
+                    else:
+                        raise RuntimeError('This shouldn\'t happen')
+        self._finalize_sentence()
         return Document(self.schema, self.sentences)
 
 
-def save_webanno_tsv(document, filename):
+def write_webanno_tsv(document, fp):
     last_span_id = 1
-    with open(filename, 'w+') as fp:
-        fp.write('#FORMAT=WebAnno TSV 3.2\n')
-        for layer, features in document.schema:
-            fp.write('#'+WEBANNO_LAYERS[layer]+'|'+'|'.join(
-                [(WEBANNO_FEATURES[f] if f in WEBANNO_FEATURES else f) \
-                 for f in features])+'\n')
+    fp.write('#FORMAT=WebAnno TSV 3.2\n')
+    for layer, features in document.schema:
+        fp.write('#'+WEBANNO_LAYERS[layer]+'|'+'|'.join(
+            [(WEBANNO_FEATURES[f] if f in WEBANNO_FEATURES else f) \
+             for f in features])+'\n')
+    fp.write('\n')
+    for s_id, s in enumerate(document.sentences, 1):
         fp.write('\n')
-        for s_id, s in enumerate(document.sentences, 1):
-            fp.write('\n')
-            text = ''.join([t.string+t.space_after for t in s.tokens]).strip()
-            fp.write('#Text={}\n'.format(text))
-            columns = {}
-            for layer, features in document.schema:
+        text = ''.join([t.string+t.space_after for t in s.tokens]).strip()
+        fp.write('#Text={}\n'.format(text))
+        columns = {}
+        for layer, features in document.schema:
+            for f in features:
+                key = layer+'.'+f
+                columns[key] = ['_'] * len(s.tokens)
+        for layer, spans in s.spans.items():
+            for start_idx, end_idx, features in spans:
                 for f in features:
                     key = layer+'.'+f
-                    columns[key] = ['_'] * len(s.tokens)
-            for layer, spans in s.spans.items():
-                for start_idx, end_idx, features in spans:
-                    for f in features:
-                        key = layer+'.'+f
-                        value = str(features[f])
-                        if f == 'head':
-                            if value == '0':
-                                value = start_idx
-                            value = '{}-{}'.format(s_id, value)
-                        if end_idx > start_idx:
-                            value += '[{}]'.format(last_span_id)
-                            last_span_id += 1
-                        for i in range(start_idx, end_idx+1):
-                            columns[key][i-1] = value
-            for i, t in enumerate(s.tokens):
-                fp.write('\t'.join([
-                    '{}-{}'.format(s_id, t.tok_id),
-                    '{}-{}'.format(t.start_idx, t.end_idx),
-                    t.string] + \
-                    [columns[layer+'.'+f][i] for layer, features in document.schema for f in features])+'\t\n')
+                    value = str(features[f])
+                    if f == 'head':
+                        if value == '0':
+                            value = start_idx
+                        value = '{}-{}'.format(s_id, value)
+                    if end_idx > start_idx:
+                        value += '[{}]'.format(last_span_id)
+                        last_span_id += 1
+                    for i in range(start_idx, end_idx+1):
+                        columns[key][i-1] = value
+        for i, t in enumerate(s.tokens):
+            fp.write('\t'.join([
+                '{}-{}'.format(s_id, t.tok_id),
+                '{}-{}'.format(t.start_idx, t.end_idx),
+                t.string] + \
+                [columns[layer+'.'+f][i] for layer, features in document.schema for f in features])+'\t\n')
 
-def read_conll(filename):
-    return CoNLLCorpusReader().read(filename)
+
+def save_webanno_tsv(document, filename):
+    with open(filename, 'w+') as fp:
+        write_webanno_tsv(document, fp)
+
+
+def load_conll(filename):
+    with open(filename) as fp:
+        return CoNLLCorpusReader().read(fp)
 
 
 def load_webanno_tsv(filename):
-    return WebAnnoTSVReader().read(filename)
+    with open(filename) as fp:
+        return WebAnnoTSVReader().read(fp)
 
 
 EXCLUDE_CSV_KEYS = { 'articleId', 'paragraphId', 'sentenceId', 'wordId',
                      'startWordId', 'endWordId' }
 
 
-def read_annotation_from_csv(corpus, filename, annotation_name):
-    with open(filename) as fp:
-        reader = csv.DictReader(fp)
-        keys = [k for k in reader.fieldnames if k not in EXCLUDE_CSV_KEYS]
-        layer = (annotation_name,
-                 tuple(keys) if keys else ('',))
-        for doc_id in corpus.documents:
-            corpus.documents[doc_id].schema.append(layer)
-            for s in corpus.documents[doc_id].sentences:
-                s.spans[layer[0]] = []
-        for line in reader:
-            doc_id = line['articleId']
-            if doc_id not in corpus.documents:
-                continue
-            s_id = int(line['sentenceId'])-1
-            start_w_id, end_w_id = None, None
-            if 'startWordId' in line and 'endWordId' in line:
-                start_w_id = int(line['startWordId'])
-                end_w_id = int(line['endWordId'])
-            elif 'wordId' in line:
-                start_w_id = int(line['wordId'])
-                end_w_id = int(line['wordId'])
+def read_annotation_from_csv(corpus, fp, annotation_name):
+    reader = csv.DictReader(fp)
+    keys = [k for k in reader.fieldnames if k not in EXCLUDE_CSV_KEYS]
+    layer = (annotation_name,
+             tuple(keys) if keys else ('',))
+    for doc_id in corpus.documents:
+        corpus.documents[doc_id].schema.append(layer)
+        for s in corpus.documents[doc_id].sentences:
+            s.spans[layer[0]] = []
+    for line in reader:
+        doc_id = line['articleId']
+        if doc_id not in corpus.documents:
+            continue
+        s_id = int(line['sentenceId'])-1
+        start_w_id, end_w_id = None, None
+        if 'startWordId' in line and 'endWordId' in line:
+            start_w_id = int(line['startWordId'])
+            end_w_id = int(line['endWordId'])
+        elif 'wordId' in line:
+            start_w_id = int(line['wordId'])
+            end_w_id = int(line['wordId'])
+        else:
+            raise Exception('No word ID')
+        try:
+            if '' in layer[1]:
+                corpus.documents[doc_id].sentences[s_id].spans[layer[0]].append(
+                    (start_w_id, end_w_id, { '' : '*' }))
             else:
-                raise Exception('No word ID')
-            try:
-                if '' in layer[1]:
-                    corpus.documents[doc_id].sentences[s_id].spans[layer[0]].append(
-                        (start_w_id, end_w_id, { '' : '*' }))
-                else:
-                    corpus.documents[doc_id].sentences[s_id].spans[layer[0]].append(
-                        (start_w_id, end_w_id, 
-                         { key : line[key] for key in line \
-                               if key not in EXCLUDE_CSV_KEYS }))
-            except Exception:
-                warnings.warn(
-                    'articleId={} sentenceId={} '
-                    'start_w_id={} end_w_id={} failed'\
-                    .format(line['articleId'], line['sentenceId'],
-                            start_w_id, end_w_id))
+                corpus.documents[doc_id].sentences[s_id].spans[layer[0]].append(
+                    (start_w_id, end_w_id, 
+                     { key : line[key] for key in line \
+                           if key not in EXCLUDE_CSV_KEYS }))
+        except Exception:
+            warnings.warn(
+                'articleId={} sentenceId={} '
+                'start_w_id={} end_w_id={} failed'\
+                .format(line['articleId'], line['sentenceId'],
+                        start_w_id, end_w_id))
+
+
+def load_annotation_from_csv(corpus, filename, annotation_name):
+    with open(filename) as fp:
+        read_annotation_from_csv(corpus, fp, annotation_name)
 

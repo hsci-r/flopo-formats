@@ -7,7 +7,7 @@ import flopo_utils.io
 
 def load_corpus(args):
     if args.input_format == 'csv':
-        return flopo_utils.io.read_conll(args.input_file)
+        return flopo_utils.io.load_conll(args.input_file)
     elif args.input_format == 'webanno-tsv':
         raise NotImplementedError()
     else:
