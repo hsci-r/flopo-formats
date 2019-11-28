@@ -2,7 +2,7 @@ import argparse
 import csv
 import logging
 
-from flopo_utils.io import read_conll
+from flopo_utils.io import load_conll
 import flopo_utils.wrappers.finer
 
 
@@ -32,7 +32,7 @@ def main():
         level=args.logging,
         format='%(asctime)s - %(levelname)s - %(message)s',
         datefmt='%Y-%m-%d %H:%M')
-    corpus = read_conll(args.input_file)
+    corpus = load_conll(args.input_file)
     annotations = []
     for i, (doc_id, doc) in enumerate(corpus.items(), 1):
         sentences = [[t.string for t in s.tokens] for s in doc.sentences]
