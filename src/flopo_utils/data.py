@@ -12,6 +12,9 @@ class Sentence:
         self.tokens = tokens
         self.spans = spans if spans is not None else {}
 
+    def __len__(self):
+        return len(self.tokens)
+
 
 class Document:
     def __init__(self, schema, sentences):
