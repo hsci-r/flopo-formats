@@ -1,5 +1,6 @@
 import argparse
 import csv
+import logging
 
 from flopo_utils.io import read_conll
 import flopo_utils.wrappers.finer
@@ -19,11 +20,18 @@ def parse_arguments():
     parser = argparse.ArgumentParser()
     parser.add_argument('-i', '--input-file')
     parser.add_argument('-o', '--output-file')
+    parser.add_argument(\
+        '-L', '--logging', default='WARNING',
+        choices=['DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL'])
     return parser.parse_args()
 
 
 def main():
     args = parse_arguments()
+    logging.basicConfig(
+        level=args.logging,
+        format='%(asctime)s - %(levelname)s - %(message)s',
+        datefmt='%Y-%m-%d %H:%M')
     corpus = read_conll(args.input_file)
     annotations = []
     for i, (doc_id, doc) in enumerate(corpus.items(), 1):
@@ -31,6 +39,7 @@ def main():
         annotations.append((
             doc_id,
             flopo_utils.wrappers.finer.annotate(sentences)))
-        print('{}/{}'.format(i, len(corpus)))
+        logging.info('Processing document: {} ({}/{})'\
+                     .format(doc_id, i, len(corpus)))
     write_annotations(annotations, args.output_file)
 
