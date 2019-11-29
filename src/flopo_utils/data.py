@@ -15,6 +15,9 @@ class Sentence:
     def __len__(self):
         return len(self.tokens)
 
+    def __str__(self):
+        return ''.join([t.string+t.space_after for t in self.tokens]).strip()
+
 
 class Document:
     def __init__(self, schema, sentences):

@@ -126,8 +126,142 @@ class CoNLLCorpusReaderTest(unittest.TestCase):
 
 
 class WebAnnoTSVReaderTest(unittest.TestCase):
+
+    TEST_DOC = \
+'''#FORMAT=WebAnno TSV 3.2
+#T_SP=de.tudarmstadt.ukp.dkpro.core.api.segmentation.type.Lemma|value
+#T_SP=de.tudarmstadt.ukp.dkpro.core.api.lexmorph.type.pos.POS|coarseValue|PosValue
+#T_RL=de.tudarmstadt.ukp.dkpro.core.api.syntax.type.dependency.Dependency|DependencyType|flavor|BT_de.tudarmstadt.ukp.dkpro.core.api.lexmorph.type.pos.POS
+#T_SP=de.tudarmstadt.ukp.dkpro.core.api.ner.type.NamedEntity|value
+#T_SP=webanno.custom.Quote|
+#T_SP=webanno.custom.Hedging|hedgingType
+#T_SP=webanno.custom.Metaphor|category
+
+
+#Text=Yhteiskuntasopimusta pohjustetaan elokuussa
+1-1	0-20	Yhteiskuntasopimusta	yhteis#kunta#sopimus	NOUN	N	obj	*	1-2	_	_	_	_	
+1-2	21-33	pohjustetaan	pohjustaa	VERB	V	root	*	1-2	_	_	_	_	
+1-3	34-43	elokuussa	elokuu	NOUN	N	obl	*	1-2	TimexTmeDat	_	_	_	
+
+#Text=– Juha Sipilän (kesk.) hallitus haluaa työmarkkinajärjestöjen kanssa laajan yhteiskuntasopimuksen, joka vauhdittaisi talouskasvua ja työllisyyttä.
+2-1	44-45	–	–	PUNCT	Punct	punct	*	2-8	_	*[2]	_	_	
+2-2	46-50	Juha	Juha	PROPN	N	nmod:poss	*	2-7	EnamexPrsHum[1]	*[2]	_	_	
+2-3	51-58	Sipilän	Sipilä	PROPN	N	flat:name	*	2-2	EnamexPrsHum[1]	*[2]	_	_	
+2-4	59-60	(	(	PUNCT	Punct	punct	*	2-5	_	*[2]	_	_	
+2-5	60-65	kesk.	kesko	NOUN	N	appos	*	2-2	EnamexOrgPlt	*[2]	_	_	
+2-6	65-66	)	)	PUNCT	Punct	punct	*	2-5	_	*[2]	_	_	
+2-7	67-75	hallitus	hallitus	NOUN	N	nsubj	*	2-8	_	*[2]	_	_	
+2-8	76-82	haluaa	haluta	VERB	V	root	*	2-8	_	*[2]	_	_	
+2-9	83-105	työmarkkinajärjestöjen	työ#markkina#järjestö	NOUN	N	obl	*	2-8	_	*[2]	_	_	
+2-10	106-112	kanssa	kanssa	ADP	Adp	case	*	2-9	_	*[2]	_	_	
+2-11	113-119	laajan	laaja	ADJ	A	amod	*	2-12	_	*[2]	_	_	
+2-12	120-141	yhteiskuntasopimuksen	yhteis#kunta#sopimus	NOUN	N	obj	*	2-8	_	*[2]	_	_	
+2-13	141-142	,	,	PUNCT	Punct	punct	*	2-15	_	*[2]	_	_	
+2-14	143-147	joka	joka	PRON	Pron	nsubj	*	2-15	_	*[2]	_	_	
+2-15	148-160	vauhdittaisi	vauhdittaa	VERB	V	acl:relcl	*	2-12	_	*[2]	_	extension1	
+2-16	161-173	talouskasvua	talous#kasvu	NOUN	N	obj	*	2-15	_	*[2]	_	_	
+2-17	174-176	ja	ja	CCONJ	C	cc	*	2-18	_	*[2]	_	_	
+2-18	177-189	työllisyyttä	työllisyys	NOUN	N	conj	*	2-16	_	*[2]	_	_	
+2-19	189-190	.	.	PUNCT	Punct	punct	*	2-8	_	*[2]	_	_	
+
+#Text=– Hallitus tekee torstaina työmarkkinajärjestöille esityksen toimista, joihin kuuluu yksikkötyökustannusten alentaminen vähintään 5 prosentilla ja muutosturva.
+3-1	191-192	–	–	PUNCT	Punct	punct	*	3-3	_	*[3]	_	_	
+3-2	193-201	Hallitus	hallitus	NOUN	N	nsubj	*	3-3	_	*[3]	_	_	
+3-3	202-207	tekee	tehdä	VERB	V	root	*	3-3	_	*[3]	_	_	
+3-4	208-217	torstaina	torstai	NOUN	N	obl	*	3-3	_	*[3]	_	_	
+3-5	218-241	työmarkkinajärjestöille	työ#markkina#järjestö	NOUN	N	obl	*	3-3	_	*[3]	_	_	
+3-6	242-251	esityksen	esitys	NOUN	N	obj	*	3-3	_	*[3]	_	_	
+3-7	252-260	toimista	toimi	NOUN	N	nmod	*	3-6	_	*[3]	_	seed	
+3-8	260-261	,	,	PUNCT	Punct	punct	*	3-10	_	*[3]	_	_	
+3-9	262-268	joihin	joka	PRON	Pron	obl	*	3-10	_	*[3]	_	_	
+3-10	269-275	kuuluu	kuulua	VERB	V	acl:relcl	*	3-7	_	*[3]	_	_	
+3-11	276-298	yksikkötyökustannusten	yksikkö#työ#kustannus	NOUN	N	nmod:gobj	*	3-12	_	*[3]	_	_	
+3-12	299-310	alentaminen	alentaminen	NOUN	N	nsubj	*	3-10	_	*[3]	_	extension1	
+3-13	311-320	vähintään	vähintään	ADV	Adv	advmod	*	3-14	_	*[3]	_	_	
+3-14	321-322	5	5	NUM	Num	nummod	*	3-15	_	*[3]	_	_	
+3-15	323-334	prosentilla	prosentti	NOUN	N	nmod	*	3-12	_	*[3]	_	_	
+3-16	335-337	ja	ja	CCONJ	C	cc	*	3-17	_	*[3]	_	_	
+3-17	338-349	muutosturva	muutos#turva	NOUN	N	conj	*	3-12	_	*[3]	_	_	
+3-18	349-350	.	.	PUNCT	Punct	punct	*	3-3	_	*[3]	_	_	
+
+#Text=– Hallitus toivoo työmarkkinajärjestöjen sitoutuvan sopimukseen 21. elokuuta mennessä.
+4-1	351-352	–	–	PUNCT	Punct	punct	*	4-3	_	*[5]	_	_	
+4-2	353-361	Hallitus	hallitus	NOUN	N	nsubj	*	4-3	_	*[5]	_	_	
+4-3	362-368	toivoo	toivoa	VERB	V	root	*	4-3	_	*[5]	P	seed	
+4-4	369-391	työmarkkinajärjestöjen	työ#markkina#järjestö	NOUN	N	nsubj	*	4-5	_	*[5]	_	_	
+4-5	392-402	sitoutuvan	sitoutua	VERB	V	xcomp:ds	*	4-3	_	*[5]	_	_	
+4-6	403-414	sopimukseen	sopimus	NOUN	N	obl	*	4-5	_	*[5]	_	_	
+4-7	415-418	21.	21.	ADJ	Num	obl	*	4-5	TimexTmeDat[4]	*[5]	_	_	
+4-8	419-427	elokuuta	elokuu	NOUN	N	flat	*	4-7	TimexTmeDat[4]	*[5]	_	_	
+4-9	428-436	mennessä	mennessä	ADP	Adp	case	*	4-7	_	*[5]	_	_	
+4-10	436-437	.	.	PUNCT	Punct	punct	*	4-3	_	*[5]	_	_	
+'''
+
     def test_read(self):
-        pass
+        doc = WebAnnoTSVReader().read(io.StringIO(self.TEST_DOC))
+        # test the document structure
+        self.assertEqual(len(doc.sentences), 4)
+        self.assertEqual(len(doc.sentences[0]), 3)
+        self.assertEqual(len(doc.sentences[1]), 19)
+        self.assertEqual(len(doc.sentences[2]), 18)
+        self.assertEqual(len(doc.sentences[3]), 10)
+        # test the annotations
+        #   NamedEntity
+        self.assertEqual(len(doc.sentences[0].spans['NamedEntity']), 1)
+        self.assertEqual(len(doc.sentences[1].spans['NamedEntity']), 2)
+        self.assertEqual(len(doc.sentences[2].spans['NamedEntity']), 0)
+        self.assertEqual(len(doc.sentences[3].spans['NamedEntity']), 1)
+        self.assertIn(
+            (3, 3, { 'value': 'TimexTmeDat' }),
+            doc.sentences[0].spans['NamedEntity'])
+        self.assertIn(
+            (2, 3, { 'value': 'EnamexPrsHum' }),
+            doc.sentences[1].spans['NamedEntity'])
+        self.assertIn(
+            (5, 5, { 'value': 'EnamexOrgPlt' }),
+            doc.sentences[1].spans['NamedEntity'])
+        self.assertIn(
+            (7, 8, { 'value': 'TimexTmeDat' }),
+            doc.sentences[3].spans['NamedEntity'])
+        #   Quote
+        self.assertEqual(len(doc.sentences[0].spans['Quote']), 0)
+        self.assertEqual(len(doc.sentences[1].spans['Quote']), 1)
+        self.assertEqual(len(doc.sentences[2].spans['Quote']), 1)
+        self.assertEqual(len(doc.sentences[3].spans['Quote']), 1)
+        self.assertIn((1, 19, {'' : '*'}), doc.sentences[1].spans['Quote'])
+        self.assertIn((1, 18, {'' : '*'}), doc.sentences[2].spans['Quote'])
+        self.assertIn((1, 10, {'' : '*'}), doc.sentences[3].spans['Quote'])
+        #   Metaphor
+        self.assertEqual(len(doc.sentences[0].spans['Metaphor']), 0)
+        self.assertEqual(len(doc.sentences[1].spans['Metaphor']), 1)
+        self.assertEqual(len(doc.sentences[2].spans['Metaphor']), 2)
+        self.assertEqual(len(doc.sentences[3].spans['Metaphor']), 1)
+        self.assertIn(
+            (15, 15, { 'category': 'extension1' }),
+            doc.sentences[1].spans['Metaphor'])
+        self.assertIn(
+            (7, 7, { 'category': 'seed' }),
+            doc.sentences[2].spans['Metaphor'])
+        self.assertIn(
+            (12, 12, { 'category': 'extension1' }),
+            doc.sentences[2].spans['Metaphor'])
+        self.assertIn(
+            (3, 3, { 'category': 'seed' }),
+            doc.sentences[3].spans['Metaphor'])
+        #   Hedging
+        self.assertEqual(len(doc.sentences[0].spans['Hedging']), 0)
+        self.assertEqual(len(doc.sentences[1].spans['Hedging']), 0)
+        self.assertEqual(len(doc.sentences[2].spans['Hedging']), 0)
+        self.assertEqual(len(doc.sentences[3].spans['Hedging']), 1)
+        self.assertIn(
+            (3, 3, { 'hedgingType': 'P' }),
+            doc.sentences[3].spans['Hedging'])
+        # check whether detokenized sentences are equal to the Text headers
+        lines = self.TEST_DOC.split('\n')
+        self.assertEqual('#Text=' + str(doc.sentences[0]), lines[10])
+        self.assertEqual('#Text=' + str(doc.sentences[1]), lines[15])
+        self.assertEqual('#Text=' + str(doc.sentences[2]), lines[36])
+        self.assertEqual('#Text=' + str(doc.sentences[3]), lines[56])
 
 class WebAnnoTSVReadWriteTest(unittest.TestCase):
 
@@ -191,5 +325,5 @@ class WebAnnoTSVReadWriteTest(unittest.TestCase):
         doc = WebAnnoTSVReader().read(io.StringIO(self.TEST_DOC))
         output = io.StringIO()
         write_webanno_tsv(doc, output)
-        self.assertEquals(output.getvalue(), self.TEST_DOC)
+        self.assertEqual(output.getvalue(), self.TEST_DOC)
     

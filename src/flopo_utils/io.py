@@ -108,6 +108,8 @@ class CoNLLCorpusReader:
 
 
 class WebAnnoTSVReader:
+    FORMAT_DECLARATION = '#FORMAT=WebAnno TSV 3.2\n'
+
     def __init__(self):
         self.schema = []
         self.sentences = []
@@ -115,12 +117,82 @@ class WebAnnoTSVReader:
         self.last_span = None
         self.spans = None
 
+    def _read_header(self, fp):
+        schema = []
+        line = fp.readline()        # first line -- format declaration
+        if line != WebAnnoTSVReader.FORMAT_DECLARATION:
+            raise Exception('Bad format declaration: {}'.format(line))
+        while line:
+            line = fp.readline().strip()
+            m = HEADER_PATTERN.match(line)
+            if m is not None:
+                schema.append((
+                    WEBANNO_LAYERS_INV[m.group(1)],
+                    tuple(m.group(2).split('|')) if m.group(2) else ('',)))
+        # two empty lines after the header
+        line = fp.readline()
+        if line.strip():
+            raise Exception('Two empty lines after header missing.')
+        return schema
+
+    def _token_from_row(self, row):
+        tok_id = int(row.pop(0).split('-')[1])
+        start_idx, end_idx = row.pop(0).split('-')
+        string = row.pop(0)
+        # TODO space after
+        return Token(tok_id, start_idx, end_idx, string)
+
+    def _parse_cell(self, cell):
+        m = SPAN_PATTERN.match(cell)
+        if m is not None:
+            if m.group(2):              # contains span ID in square brackets?
+                return m.group(1), m.group(3)
+            else:
+                return m.group(1), None
+        else:
+            raise Exception('Invalid TSV cell: {}'.format(cell))
+
     def _finalize_last_span(self, layer):
         sp = self.last_span[layer]
         if sp['id'] is not None:
             self.spans[layer].append((sp['start'], sp['end'], sp['values']))
         self.last_span[layer] = { 'id' : None, 'start' : None, 'end' : None,
                                   'values' : None }
+
+    def _process_token_annotation(self, layer, tok_id, values, span_ids):
+        span_ids_list = list(span_ids.values())
+        span_id = span_ids_list[0]
+        if not all(x == span_id for x in span_ids_list):
+            raise Exception(\
+                'Differing span IDs in a multi-token annotation')
+        # if no span ID -> single-token annotation or no annotation
+        # (if there was as span ID on the previous token, it ends there)
+        if span_id is None:
+            self._finalize_last_span(layer)
+            # only add a single-token span if the values are not '_'
+            # (which indicates that there is no annotation)
+            if not all(x == '_' for x in values.values()):
+                self.spans[layer].append((tok_id, tok_id, values))
+        # span ID differing from the previous token
+        # -> the span marked on the previous token ends there,
+        #    a new span starts here
+        elif self.last_span[layer]['id'] != span_id:
+            self._finalize_last_span(layer)
+            self.last_span[layer]['id'] = span_id
+            self.last_span[layer]['start'] = tok_id
+            self.last_span[layer]['end'] = tok_id
+            self.last_span[layer]['values'] = values
+        # span ID same as on the previous token and the values match
+        # -> the current token continues the existing span
+        elif self.last_span[layer]['id'] == span_id \
+                and self.last_span[layer]['end']+1 == tok_id \
+                and self.last_span[layer]['values'] == values:
+            self.last_span[layer]['end'] = tok_id
+        else:
+            # TODO what went wrong?
+            # - span ID same but values don't match?
+            # - the "current" span ends before the previous token?
+            raise RuntimeError('This shouldn\'t happen')
 
     def _finalize_sentence(self):
         # fix space after
@@ -135,16 +207,7 @@ class WebAnnoTSVReader:
         self.spans = { layer: [] for layer, features in self.schema }
 
     def read(self, fp):
-        line = fp.readline()        # first line -- format declaration
-        while line:
-            line = fp.readline().strip()
-            m = HEADER_PATTERN.match(line)
-            if m is not None:
-                self.schema.append((
-                    WEBANNO_LAYERS_INV[m.group(1)],
-                    tuple(m.group(2).split('|')) if m.group(2) else ('',)))
-        #print(schema)
-        line = fp.readline()
+        self.schema = self._read_header(fp)
         self.spans = { layer: [] for layer, features in self.schema }
         self.last_span = { layer: { 'id' : None, 'start' : None,
                                     'end' : None, 'values' : None } \
@@ -156,52 +219,15 @@ class WebAnnoTSVReader:
             elif line.startswith('#'):
                 continue
             else:
-                cols = line.split('\t')
-                tok_id = int(cols[0].split('-')[1])
-                start_idx, end_idx = cols[1].split('-')
-                string = cols[2]
-                # TODO space after
-                t = Token(tok_id, start_idx, end_idx, string)
+                row = line.split('\t')
+                t = self._token_from_row(row)
                 self.tokens.append(t)
-                c = 3
                 for layer, features in self.schema:
                     values, span_ids = {}, {}
                     for f in features:
-                        m = SPAN_PATTERN.match(cols[c])
-                        if m is not None:
-                            if m.group(2):
-                                values[f], span_ids[f] = m.group(1), m.group(3)
-                            else:
-                                values[f], span_ids[f] = m.group(1), None
-                        else:
-                            raise RuntimeError('This shouldn\'t happen')
-                        c += 1
-                    # add span (TODO refactor):
-                    # - add as a single-span annotation if no span ID
-                    # - create a new multi-token span if there is no current
-                    # - add to current multi-token span if conditions satisfied
-                    #   - span_id 
-                    #   - feature values match
-                    span_ids_list = list(span_ids.values())
-                    span_id = span_ids_list[0]
-                    if not all(x == span_id for x in span_ids_list):
-                        raise Exception(\
-                            'Differing span IDs in a multi-token annotation')
-                    if span_id is None:
-                        self._finalize_last_span(layer)
-                        self.spans[layer].append((tok_id, tok_id, values))
-                    elif self.last_span[layer]['id'] != span_id:
-                        self._finalize_last_span(layer)
-                        self.last_span[layer]['id'] = span_id
-                        self.last_span[layer]['start'] = tok_id
-                        self.last_span[layer]['end'] = tok_id
-                        self.last_span[layer]['values'] = values
-                    elif self.last_span[layer]['id'] == span_id \
-                            and self.last_span[layer]['end']+1 == tok_id \
-                            and self.last_span[layer]['values'] == values:
-                        self.last_span[layer]['end'] = tok_id
-                    else:
-                        raise RuntimeError('This shouldn\'t happen')
+                        values[f], span_ids[f] = self._parse_cell(row.pop(0))
+                    self._process_token_annotation(
+                        layer, t.tok_id, values, span_ids)
         self._finalize_sentence()
         return Document(self.schema, self.sentences)
 
@@ -216,8 +242,7 @@ def write_webanno_tsv(document, fp):
     fp.write('\n')
     for s_id, s in enumerate(document.sentences, 1):
         fp.write('\n')
-        text = ''.join([t.string+t.space_after for t in s.tokens]).strip()
-        fp.write('#Text={}\n'.format(text))
+        fp.write('#Text={}\n'.format(s))
         columns = {}
         for layer, features in document.schema:
             for f in features:
