@@ -13,6 +13,7 @@ WEBANNO_LAYERS = {
     'Quote' : 'T_SP=webanno.custom.Quote',
     'Metaphor' : 'T_SP=webanno.custom.Metaphor',
     'Misc' : 'T_SP=webanno.custom.Misc',
+    'IQuote' : 'T_SP=webanno.custom.IQuote',
     'NamedEntity' : 'T_SP=de.tudarmstadt.ukp.dkpro.core.api.ner.type.NamedEntity'
 }
 WEBANNO_LAYERS_INV = { val: key for key, val in WEBANNO_LAYERS.items() }
@@ -357,4 +358,40 @@ def read_annotation_from_csv(corpus, fp, annotation_name):
 def load_annotation_from_csv(corpus, filename, annotation_name):
     with open(filename) as fp:
         read_annotation_from_csv(corpus, fp, annotation_name)
+
+
+def _prolog_escape(string):
+    return string.replace('"', '""')
+
+
+def write_prolog(document, fp):
+    results = []
+    for s_id, s in enumerate(document.sentences, 1):
+        for t_id, t in enumerate(s.tokens, 1):
+            results.append(
+                ('token', s_id, t_id,
+                 '"{}"'.format(_prolog_escape(t.string))))
+        for (start, end, values) in s.spans['Lemma']:
+            results.append(
+                ('lemma', s_id, start,
+                 '"{}"'.format(_prolog_escape(values['value']))))
+        for (start, end, values) in s.spans['POS']:
+            results.append(('upos', s_id, start, values['coarseValue'].lower()))
+            results.append(('xpos', s_id, start, values['PosValue'].lower()))
+        for (start, end, values) in s.spans['Dependency']:
+            head = values[WEBANNO_FEATURES['head']]
+            # if token is root -> change head to 0 (instead of a loop)
+            if head == '{}-{}'.format(s_id, start):
+                results.append(('head', s_id, start, '{}-{}'.format(s_id, 0)))
+            else:
+                results.append(('head', s_id, start, head))
+            results.append(('deprel', s_id, start, values['DependencyType']))
+    results.sort()
+    for predicate, s_id, t_id, arg in results:
+        fp.write('{}({}-{}, {}).\n'.format(predicate, s_id, t_id, arg))
+
+
+def save_prolog(document, filename):
+    with open(filename, 'w+') as fp:
+        write_prolog(document, fp)
 
