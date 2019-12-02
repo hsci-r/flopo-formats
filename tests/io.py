@@ -2,7 +2,8 @@ import io
 import unittest
 
 from flopo_utils.io import \
-    CoNLLCorpusReader, WebAnnoTSVReader, write_webanno_tsv
+    CoNLLCorpusReader, WebAnnoTSVReader, write_webanno_tsv, \
+    _webanno_escape, _webanno_unescape
 
 
 class CoNLLCorpusReaderTest(unittest.TestCase):
@@ -125,6 +126,78 @@ class CoNLLCorpusReaderTest(unittest.TestCase):
         # TODO test the start and end indices of last tokens
 
 
+class WebAnnoEscapeTest(unittest.TestCase):
+
+    UNESCAPED = \
+        'This \\ is a [test] for | WebAnno | s _ reserved -> characters ;'\
+        ' (all * of them)'
+    ESCAPED = \
+        'This \\\\ is a \\[test\\] for \\| WebAnno \\| s \\_ reserved \\->'\
+        ' characters \\; (all \\* of them)'
+    TEST_DOC = \
+'''#FORMAT=WebAnno TSV 3.2
+#T_SP=de.tudarmstadt.ukp.dkpro.core.api.segmentation.type.Lemma|value
+
+
+#Text=This \\\\ is a [test] for | WebAnno | s _ reserved -> characters ; (all * of them).
+1-1	0-4	This	_	
+1-2	5-6	\	\\\\	
+1-3	7-9	is	_	
+1-4	10-11	a	_	
+1-5	12-13	[	\[	
+1-6	13-17	test	_	
+1-7	17-18	]	\]	
+1-8	19-22	for	c\\\\\\[ompl\\]ic\\|at\\_ed\\->lemma\\;LOL\\*	
+1-9	23-24	|	\|	
+1-10	25-32	WebAnno	_	
+1-11	33-34	|	\|	
+1-12	35-36	s	_	
+1-13	37-38	_	\_	
+1-14	39-47	reserved	_	
+1-15	48-49	-	\->	
+1-16	49-50	>	_	
+1-17	51-61	characters	_	
+1-18	62-63	;	\;	
+1-19	64-65	(	_	
+1-20	65-68	all	_	
+1-21	69-70	*	\*	
+1-22	71-73	of	_	
+1-23	74-78	them	_	
+1-24	78-79	)	_	
+1-25	79-80	.	_	
+'''
+
+    def test_escape(self):
+        escaped = _webanno_escape(self.UNESCAPED)
+        self.assertEqual(escaped, self.ESCAPED)
+
+    def test_unescape(self):
+        unescaped = _webanno_unescape(self.ESCAPED)
+        self.assertEqual(unescaped, self.UNESCAPED)
+
+    def test_read_write(self):
+        # read the document
+        doc = WebAnnoTSVReader().read(io.StringIO(self.TEST_DOC))
+
+        # check the (unescaped) lemma values
+        sp = doc.sentences[0].spans['Lemma']
+        self.assertEqual(sp[0][2]['value'], '\\')
+        self.assertEqual(sp[1][2]['value'], '[')
+        self.assertEqual(sp[2][2]['value'], ']')
+        self.assertEqual(sp[3][2]['value'], 'c\\[ompl]ic|at_ed->lemma;LOL*')
+        self.assertEqual(sp[4][2]['value'], '|')
+        self.assertEqual(sp[5][2]['value'], '|')
+        self.assertEqual(sp[6][2]['value'], '_')
+        self.assertEqual(sp[7][2]['value'], '->')
+        self.assertEqual(sp[8][2]['value'], ';')
+        self.assertEqual(sp[9][2]['value'], '*')
+
+        # write and check whether it is identical to the original
+        output = io.StringIO()
+        write_webanno_tsv(doc, output)
+        self.assertEqual(output.getvalue(), self.TEST_DOC)
+
+
 class WebAnnoTSVReaderTest(unittest.TestCase):
 
     TEST_DOC = \
@@ -228,9 +301,9 @@ class WebAnnoTSVReaderTest(unittest.TestCase):
         self.assertEqual(len(doc.sentences[1].spans['Quote']), 1)
         self.assertEqual(len(doc.sentences[2].spans['Quote']), 1)
         self.assertEqual(len(doc.sentences[3].spans['Quote']), 1)
-        self.assertIn((1, 19, {'' : '*'}), doc.sentences[1].spans['Quote'])
-        self.assertIn((1, 18, {'' : '*'}), doc.sentences[2].spans['Quote'])
-        self.assertIn((1, 10, {'' : '*'}), doc.sentences[3].spans['Quote'])
+        self.assertIn((1, 19, {'' : ''}), doc.sentences[1].spans['Quote'])
+        self.assertIn((1, 18, {'' : ''}), doc.sentences[2].spans['Quote'])
+        self.assertIn((1, 10, {'' : ''}), doc.sentences[3].spans['Quote'])
         #   Metaphor
         self.assertEqual(len(doc.sentences[0].spans['Metaphor']), 0)
         self.assertEqual(len(doc.sentences[1].spans['Metaphor']), 1)

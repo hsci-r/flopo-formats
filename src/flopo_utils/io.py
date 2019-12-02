@@ -24,9 +24,12 @@ WEBANNO_FEATURES = {
 }
 WEBANNO_FEATURES_INV = { val: key for key, val in WEBANNO_FEATURES.items() }
 
+WEBANNO_ESCAPE_PATTERN = re.compile('([\\\[\]\|_;\*\]]|->)')
+WEBANNO_UNESCAPE_PATTERN = re.compile('\\\\([\\\[\]\|_;\*\]]|->)')
+
 
 HEADER_PATTERN = re.compile('^#([^|]+)\|(.*)$')
-SPAN_PATTERN = re.compile('([^[]+)(\[([0-9]+)\])?')
+SPAN_PATTERN = re.compile('(.+)(\[([0-9]+)\])')
 
 class CoNLLCorpusReader:
     PATTERN_SPACES_AFTER = re.compile('SpacesAfter=([^|]*)')
@@ -89,7 +92,7 @@ class CoNLLCorpusReader:
             { 'coarseValue' : line['upos'], 'PosValue' : line['xpos'] }))
         self.spans['Dependency'].append((
             t.tok_id, t.tok_id,
-            { 'DependencyType' : line['deprel'], 'flavor' : '*',
+            { 'DependencyType' : line['deprel'], 'flavor' : '',
               'head' : int(line['head']) }))
 
         self.idx += len(line['word']) + len(space_after)
@@ -105,6 +108,14 @@ class CoNLLCorpusReader:
             self._read_token(line)
         self._finalize_document(None)
         return self.corpus
+
+
+def _webanno_escape(string):
+    return WEBANNO_ESCAPE_PATTERN.sub('\\\\\\1', string)
+
+
+def _webanno_unescape(string):
+    return WEBANNO_UNESCAPE_PATTERN.sub('\\1', string)
 
 
 class WebAnnoTSVReader:
@@ -143,14 +154,27 @@ class WebAnnoTSVReader:
         return Token(tok_id, start_idx, end_idx, string)
 
     def _parse_cell(self, cell):
+        '''
+        Parse the cell in format "value" or "value[span_id]".
+        Return the tuple (value, span_id).
+        There are two special values:
+        - '_' is mapped to None (no annotation present),
+        - '*' is mapped to '' (empty string; valueless annotation
+          present).
+        '''
         m = SPAN_PATTERN.match(cell)
         if m is not None:
-            if m.group(2):              # contains span ID in square brackets?
-                return m.group(1), m.group(3)
-            else:
-                return m.group(1), None
+            value = _webanno_unescape(m.group(1)) \
+                    if m.group(1) != '*' else ''
+            span_id = m.group(3) if m.group(2) is not None else None
+            return value, span_id
         else:
-            raise Exception('Invalid TSV cell: {}'.format(cell))
+            value = None
+            if cell == '*':
+                value = ''
+            elif cell != '_':
+                value = _webanno_unescape(cell)
+            return value, None
 
     def _finalize_last_span(self, layer):
         sp = self.last_span[layer]
@@ -169,9 +193,9 @@ class WebAnnoTSVReader:
         # (if there was as span ID on the previous token, it ends there)
         if span_id is None:
             self._finalize_last_span(layer)
-            # only add a single-token span if the values are not '_'
+            # only add a single-token span if the values are not None
             # (which indicates that there is no annotation)
-            if not all(x == '_' for x in values.values()):
+            if not all(x is None for x in values.values()):
                 self.spans[layer].append((tok_id, tok_id, values))
         # span ID differing from the previous token
         # -> the span marked on the previous token ends there,
@@ -242,7 +266,7 @@ def write_webanno_tsv(document, fp):
     fp.write('\n')
     for s_id, s in enumerate(document.sentences, 1):
         fp.write('\n')
-        fp.write('#Text={}\n'.format(s))
+        fp.write('#Text={}\n'.format(str(s).replace('\\', '\\\\')))
         columns = {}
         for layer, features in document.schema:
             for f in features:
@@ -252,7 +276,8 @@ def write_webanno_tsv(document, fp):
             for start_idx, end_idx, features in spans:
                 for f in features:
                     key = layer+'.'+f
-                    value = str(features[f])
+                    value = _webanno_escape(str(features[f])) \
+                            if features[f] != '' else '*'
                     if f == 'head':
                         if value == '0':
                             value = start_idx
@@ -315,7 +340,7 @@ def read_annotation_from_csv(corpus, fp, annotation_name):
         try:
             if '' in layer[1]:
                 corpus.documents[doc_id].sentences[s_id].spans[layer[0]].append(
-                    (start_w_id, end_w_id, { '' : '*' }))
+                    (start_w_id, end_w_id, { '' : None }))
             else:
                 corpus.documents[doc_id].sentences[s_id].spans[layer[0]].append(
                     (start_w_id, end_w_id, 
