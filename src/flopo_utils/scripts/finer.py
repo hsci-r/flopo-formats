@@ -17,13 +17,21 @@ def write_annotations(annotations, output_file):
 
 
 def parse_arguments():
-    parser = argparse.ArgumentParser()
-    parser.add_argument('-i', '--input-file')
-    parser.add_argument('-o', '--output-file')
-    parser.add_argument('--remote', action='store_true')
+    parser = argparse.ArgumentParser(
+        description='Tag named entities using FINER.')
+    parser.add_argument(
+        '-i', '--input-file', metavar='FILE',
+        help='CSV file containing a corpus to annotate.')
+    parser.add_argument(
+        '-o', '--output-file', metavar='FILE',
+        help='CSV file to save FINER annotations.')
+    parser.add_argument(
+        '--remote', action='store_true',
+        help='Use a remote FINER instance via POST requests.')
     parser.add_argument(\
         '-L', '--logging', default='WARNING',
-        choices=['DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL'])
+        choices=['DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL'],
+        help='logging level')
     return parser.parse_args()
 
 

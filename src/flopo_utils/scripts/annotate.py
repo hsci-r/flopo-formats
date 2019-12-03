@@ -26,9 +26,19 @@ def parse_annotation_source(source):
 
 
 def parse_arguments():
-    parser = argparse.ArgumentParser()
-    parser.add_argument('-a', '--annotations', nargs='+')
-    parser.add_argument('corpus_dir')
+    parser = argparse.ArgumentParser(
+        description='Add annotations provided as CSV files into a corpus'\
+                    ' of WebAnno TSV documents.')
+    parser.add_argument(
+        '-a', '--annotations', nargs='+',
+        help='A list of annotations to include, each having the format:'\
+             ' LAYER:FILE, where LAYER is the name of the layer'\
+             ' (for example \'Hedging\') and FILE is a CSV file.'\
+             ' Terminate the list with "--".')
+    parser.add_argument(
+        'corpus_dir',
+        help='The directory containing the corpus (as WebAnno TSV files).'\
+             ' CAUTION: the files will be overwritten.')
     return parser.parse_args()
 
 

@@ -47,15 +47,22 @@ def save_corpus(corpus, args):
 
 
 def parse_arguments():
-    parser = argparse.ArgumentParser()
+    parser = argparse.ArgumentParser(
+        description='Convert between different file formats used in FLOPO.')
     parser.add_argument('-f', '--from', dest='input_format',
-        choices=['csv', 'webanno-tsv'])
+        choices=['csv', 'webanno-tsv'],
+        help='input file format')
     parser.add_argument('-t', '--to', dest='output_format',
-        choices=['csv', 'webanno-tsv', 'prolog'])
-    parser.add_argument('-i', '--input-file')
-    parser.add_argument('-o', '--output-file')
-    parser.add_argument('-I', '--input-dir')
-    parser.add_argument('-O', '--output-dir')
+        choices=['csv', 'webanno-tsv', 'prolog'],
+        help='output file format')
+    parser.add_argument('-i', '--input-file', metavar='FILE')
+    parser.add_argument('-o', '--output-file', metavar='FILE')
+    parser.add_argument('-I', '--input-dir', metavar='DIR',
+        help='input directory for formats storing each document in a'\
+             ' separate file -- all documents in the given directory'
+             ' are treated as a corpus and processed')
+    parser.add_argument('-O', '--output-dir', metavar='DIR',
+        help='output directory (see above)')
     return parser.parse_args()
 
 
