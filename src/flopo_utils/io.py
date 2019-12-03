@@ -361,7 +361,7 @@ def load_annotation_from_csv(corpus, filename, annotation_name):
 
 
 def _prolog_escape(string):
-    return string.replace('"', '""')
+    return string.replace('"', '""').replace('\\', '\\\\')
 
 
 def write_prolog(document, fp):
