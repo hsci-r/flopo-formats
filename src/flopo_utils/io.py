@@ -189,9 +189,10 @@ class WebAnnoTSVReader:
     def _process_token_annotation(self, layer, tok_id, values, span_ids):
         span_ids_list = list(span_ids.values())
         span_id = span_ids_list[0]
-        if not all(x == span_id for x in span_ids_list):
+        if not all(x == span_id or x is None for x in span_ids_list):
             raise Exception(\
-                'Differing span IDs in a multi-token annotation')
+                'Differing span IDs in a multi-token annotation: {}'\
+                .format(span_ids_list))
         # if no span ID -> single-token annotation or no annotation
         # (if there was as span ID on the previous token, it ends there)
         if span_id is None:
@@ -349,7 +350,7 @@ def read_annotation_from_csv(corpus, fp, annotation_name):
         try:
             if '' in layer[1]:
                 corpus.documents[doc_id].sentences[s_id].spans[layer[0]].append(
-                    (start_w_id, end_w_id, { '' : None }))
+                    (start_w_id, end_w_id, { '' : '' }))
             else:
                 corpus.documents[doc_id].sentences[s_id].spans[layer[0]].append(
                     (start_w_id, end_w_id, 
