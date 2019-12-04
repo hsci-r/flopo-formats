@@ -21,7 +21,9 @@ WEBANNO_LAYERS_INV = { val: key for key, val in WEBANNO_LAYERS.items() }
 # TODO this needs to be made less hard-coded (sorry for the English, it's late...)
 WEBANNO_FEATURES = {
     'head' : 'BT_de.tudarmstadt.ukp.dkpro.core.api.lexmorph.type.pos.POS',
-    'type' : 'hedgingType'
+    'type' : 'hedgingType',
+    'author' : 'ROLE_webanno.custom.IQuote:authorHead_webanno.custom.IQuoteAuthorHeadLink',
+    'authorHead' : 'de.tudarmstadt.ukp.dkpro.core.api.segmentation.type.Lemma'
 }
 WEBANNO_FEATURES_INV = { val: key for key, val in WEBANNO_FEATURES.items() }
 
@@ -275,6 +277,10 @@ def write_webanno_tsv(document, fp):
                 columns[key] = ['_'] * len(s.tokens)
         for layer, spans in s.spans.items():
             for start_idx, end_idx, features in spans:
+                span_id = None
+                if end_idx > start_idx:
+                    span_id = last_span_id
+                    last_span_id += 1
                 for f in features:
                     key = layer+'.'+f
                     value = _webanno_escape(str(features[f])) \
@@ -283,9 +289,11 @@ def write_webanno_tsv(document, fp):
                         if value == '0':
                             value = start_idx
                         value = '{}-{}'.format(s_id, value)
-                    if end_idx > start_idx:
-                        value += '[{}]'.format(last_span_id)
-                        last_span_id += 1
+                    # for some weird reason, the annotations pointing to
+                    # another token (like "head") must not contain a span ID
+                    # (is this a WebAnno bug?)
+                    if span_id is not None and f != 'authorHead':
+                        value += '[{}]'.format(span_id)
                     for i in range(start_idx, end_idx+1):
                         columns[key][i-1] = value
         for i, t in enumerate(s.tokens):
