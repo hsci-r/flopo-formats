@@ -33,7 +33,8 @@ The following CLI tools are currently provided:
 - `flopo-annotate`: Add annotations provided as CSV files into a corpus
   of WebAnno TSV documents.
 - `flopo-convert`: Convert between different file formats used in FLOPO.
-- `flopo-finer`: Tag named entities using FINER.
+- `flopo-finer`: Tag named entities using FINER,
+- `flopo-verbalize`: Print the spans of a given annotation layer as text.
 
 Each tool has a `--help` option, which will print detailed usage information.
 
