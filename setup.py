@@ -20,7 +20,7 @@ setup(
             'flopo-annotate  = flopo_utils.scripts.annotate:main',
             'flopo-convert   = flopo_utils.scripts.convert:main',
             'flopo-finer     = flopo_utils.scripts.finer:main',
-            'flopo-verbalize = flopo_utils.scripts.verbalize:main',
+            'flopo-export    = flopo_utils.scripts.export:main',
         ]
     }
 )

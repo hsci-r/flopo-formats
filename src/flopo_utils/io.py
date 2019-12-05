@@ -131,6 +131,10 @@ class WebAnnoTSVReader:
         self.last_span = None
         self.spans = None
 
+    def _read_features(self, string):
+        return [(WEBANNO_FEATURES_INV[f] if f in WEBANNO_FEATURES_INV else f) \
+                for f in string.split('|')]
+
     def _read_header(self, fp):
         schema = []
         line = fp.readline()        # first line -- format declaration
@@ -142,7 +146,7 @@ class WebAnnoTSVReader:
             if m is not None:
                 schema.append((
                     WEBANNO_LAYERS_INV[m.group(1)],
-                    tuple(m.group(2).split('|')) if m.group(2) else ('',)))
+                    self._read_features(m.group(2)) if m.group(2) else ('',)))
         # two empty lines after the header
         line = fp.readline()
         if line.strip():
@@ -254,6 +258,13 @@ class WebAnnoTSVReader:
                     values, span_ids = {}, {}
                     for f in features:
                         values[f], span_ids[f] = self._parse_cell(row.pop(0))
+                        # if feature is "head" -- remove the sentence ID
+                        # and set to 0 for root
+                        if f == 'head':
+                            i = values[f].index('-')
+                            values[f] = int(values[f][i+1:])
+                            if values[f] == t.tok_id:
+                                values[f] = 0
                     self._process_token_annotation(
                         layer, t.tok_id, values, span_ids)
         self._finalize_sentence()
@@ -388,12 +399,8 @@ def write_prolog(document, fp):
             results.append(('upos', s_id, start, values['coarseValue'].lower()))
             results.append(('xpos', s_id, start, values['PosValue'].lower()))
         for (start, end, values) in s.spans['Dependency']:
-            head = values[WEBANNO_FEATURES['head']]
-            # if token is root -> change head to 0 (instead of a loop)
-            if head == '{}-{}'.format(s_id, start):
-                results.append(('head', s_id, start, '{}-{}'.format(s_id, 0)))
-            else:
-                results.append(('head', s_id, start, head))
+            head = '{}-{}'.format(s_id, values['head'])
+            results.append(('head', s_id, start, head))
             results.append(('deprel', s_id, start, values['DependencyType']))
     results.sort()
     for predicate, s_id, t_id, arg in results:

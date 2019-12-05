@@ -327,7 +327,7 @@ class WebAnnoTSVReaderTest(unittest.TestCase):
         self.assertEqual(len(doc.sentences[2].spans['Hedging']), 0)
         self.assertEqual(len(doc.sentences[3].spans['Hedging']), 1)
         self.assertIn(
-            (3, 3, { 'hedgingType': 'P' }),
+            (3, 3, { 'type': 'P' }),
             doc.sentences[3].spans['Hedging'])
         # check whether detokenized sentences are equal to the Text headers
         lines = self.TEST_DOC.split('\n')
