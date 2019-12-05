@@ -102,6 +102,9 @@ Export the annotations from WebAnno files as text or CSV.
   is used.
 - `-t`, `--text` -- if set, the last column of the output will contain the full
   text of annotation spans.
+- `-l`, `--linearize` -- like `--text`, but instead of surface forms, print
+  values of the chosen feature separated by spaces. Supply the features of
+  interest as a list `LAYER.FEATURE`, terminated by `--`.
 - `-d`, `--delimiter` -- the field delimiter for the output format (default:
   comma). If you want to do some further processing (e.g. with `cut` or `awk`),
   it is useful to set it to Tab.
@@ -123,6 +126,27 @@ Hallitus        se ei aikaisemmin kerrotusta poiketen pienennäkään sunnuntai-
 STTK:n_puheenjohtajan_Antti_Palolan     malli on ainakin osittain sama kuin 20. elokuuta.
 Työmarkkinajohtajat     neuvottelut kestävät joitakin viikkoja
 Lyly    Osapuolilla ovat neuvotteluesitykset pöydällä ja niistä lähdetään vääntämään, SAK:n puheenjohtaja Lauri Lyly sanoi.
+```
+
+Prints out the lemmas of all metaphors in a document.
+
+```
+$ flopo-export -a Metaphor -i 99860144 -l Lemma.value
+articleId,sentenceId,startWordId,endWordId,category,Lemma.value
+99860144,2,7,7,extension1,esitellä
+99860144,3,4,4,extension1,neuvottelu
+99860144,4,5,5,seed,asento
+99860144,7,4,4,extension1,neuvottelu
+99860144,7,6,6,seed,kaatua
+99860144,8,6,6,seed,kova
+99860144,8,9,9,seed,paketti
+99860144,10,4,4,seed,leikata
+99860144,13,9,9,extension1,neuvotella
+99860144,14,6,6,extension1,neuvottelu
+99860144,16,4,4,seed,pöytä
+99860144,16,7,7,extension1,lähteä
+99860144,16,8,8,seed,vääntää
+99860144,18,8,8,extension1,neuvottelu
 ```
 
 Shows the indirect quotes from a single document.
