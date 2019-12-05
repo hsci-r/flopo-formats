@@ -61,7 +61,7 @@ def parse_arguments():
     parser.add_argument(
         '-l', '--linearize', nargs='+',
         help='Attach the value of some other features for each annotation'\
-             ' span. Supply a list of entries of the form: LAYER.FEATURE.'
+             ' span. Supply a list of entries of the form: LAYER.FEATURE.')
     parser.add_argument(
         '-d', '--delimiter', default=',',
         help='Delimiter to separate the fields.')
