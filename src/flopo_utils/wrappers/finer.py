@@ -2,7 +2,8 @@ import logging
 from operator import itemgetter
 import re
 import subprocess
-from urllib.parse import urlencode
+from urllib3.util.retry import Retry
+from urllib3.poolmanager import PoolManager
 import urllib.request
 
 
@@ -50,15 +51,14 @@ def _finer_local_annotate(tokens):
     p.wait()
     return result
 
+http = PoolManager(retries=Retry(999,backoff_factor=0.5))
 
 def _finer_remote_annotate(tokens):
     '''
     Like _finer_local_annotate(), but use a remote FINER.
     '''
-    data = bytes(urlencode({ 'text' : '\n'.join(tokens)}) + '&pretokenized',
-                 'ascii')
-    r = urllib.request.urlopen(REMOTE_FINER_URL, data = data)
-    return _convert_finer_output(str(r.read(), 'utf-8'))
+    r = http.request('POST',REMOTE_FINER_URL, fields = { 'text':'\n'.join(tokens), 'pretokenized':'true' })
+    return _convert_finer_output(r.data.decode('utf-8'))
 
 
 def _finer_annotate(tokens, remote=False):
