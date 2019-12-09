@@ -35,20 +35,20 @@ def parse_arguments():
              ' LAYER:FILE, where LAYER is the name of the layer'\
              ' (for example \'Hedging\') and FILE is a CSV file.'\
              ' Terminate the list with "--".')
-    parser.add_argument(
-        'corpus_dir',
-        help='The directory containing the corpus (as WebAnno TSV files).'\
-             ' CAUTION: the files will be overwritten.')
+    parser.add_argument('-I', '--input-dir', metavar='DIR',
+        help='input directory containing WebAnno-TSV files.')
+    parser.add_argument('-O', '--output-dir', metavar='DIR',
+        help='output directory (see above)')
     return parser.parse_args()
 
 
 def main():
     args = parse_arguments()
-    corpus = load_corpus(args.corpus_dir)
+    corpus = load_corpus(args.input_dir)
     for a in args.annotations:
         layer, filename = parse_annotation_source(a)
         print(layer, filename)
         load_annotation_from_csv(corpus, filename, layer)
     for doc_id, doc in corpus.items():
-        save_webanno_tsv(doc, os.path.join(args.corpus_dir, doc_id))
+        save_webanno_tsv(doc, os.path.join(args.output_dir, doc_id))
 

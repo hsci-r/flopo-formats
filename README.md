@@ -26,7 +26,7 @@ flopo-annotate -a \
 	Quote:kiky.quotes.csv \
 	Metaphor:kiky.metaphors.csv \
 	Hedging:kiky.hedging.csv \
-	-- webanno/
+	-I webanno/ -O webanno-annotated/
 ```
 
 The commands are described below. Furthermore, each command has a `--help`
@@ -41,9 +41,11 @@ corpus of WebAnno-TSV files.
 
 - `-a`, `--annotations` -- a list of annotations to include, each having the
   format: `LAYER:FILE`, where `LAYER` is the name of the layer (for example
-  'Hedging') and `FILE` is a CSV file. Terminate the list with `--`.
-- `corpus_dir` -- The directory containing the corpus (as WebAnno TSV files).
-  CAUTION: the files will be overwritten.
+  'Hedging') and `FILE` is a CSV file.
+- `-I`, `--input-dir` -- The directory containing the corpus (as WebAnno TSV
+  files).
+- `-O`, `--output-dir` -- The directory into which the annotated TSV files will
+  be saved.
 
 ### Examples
 
@@ -53,11 +55,12 @@ flopo-annotate -a \
 	Quote:kiky.quotes.csv \
 	Metaphor:kiky.metaphors.csv \
 	Hedging:kiky.hedging.csv \
-	-- webanno/
+	-I webanno/ -O webanno-annotated/
 ```
 
 Add the annotations of named entities, quotes, metaphors and hedging to all TSV
-files in the folder `webanno`.
+files in the folder `webanno`. Save the results in the folder
+`webanno-annotated`.
 
 ## `flopo-convert`
 
