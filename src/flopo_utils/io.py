@@ -350,15 +350,21 @@ def read_annotation_from_csv(corpus, fp, annotation_name):
             continue
         s_id = int(line['sentenceId'])-1
         start_w_id, end_w_id = None, None
-        if 'startWordId' in line and 'endWordId' in line:
-            start_w_id = int(line['startWordId'])
-            end_w_id = int(line['endWordId'])
-        elif 'wordId' in line:
-            start_w_id = int(line['wordId'])
-            end_w_id = int(line['wordId'])
-        else:
-            raise Exception('No word ID')
         try:
+            if 'startWordId' in line and 'endWordId' in line:
+                start_w_id = int(line['startWordId'])
+                end_w_id = int(line['endWordId'])
+            elif 'wordId' in line:
+                start_w_id = int(line['wordId'])
+                end_w_id = int(line['wordId'])
+            else:
+                raise Exception('No word ID')
+            if s_id >= len(corpus.documents[doc_id].sentences):
+                raise Exception('Sentence ID out of range.')
+            if start_w_id < 0 or start_w_id >= len(corpus.documents[doc_id].sentences[s_id]):
+                raise Exception('Span start ID out of range.')
+            if end_w_id < 0 or end_w_id >= len(corpus.documents[doc_id].sentences[s_id]):
+                raise Exception('Span end ID out of range.')
             if '' in layer[1]:
                 corpus.documents[doc_id].sentences[s_id].spans[layer[0]].append(
                     (start_w_id, end_w_id, { '' : '' }))
@@ -367,12 +373,12 @@ def read_annotation_from_csv(corpus, fp, annotation_name):
                     (start_w_id, end_w_id, 
                      { key : line[key] for key in line \
                            if key not in EXCLUDE_CSV_KEYS }))
-        except Exception:
+        except Exception as e:
             warnings.warn(
                 'articleId={} sentenceId={} '
-                'start_w_id={} end_w_id={} failed'\
+                'start_w_id={} end_w_id={} failed with message: {}'\
                 .format(line['articleId'], line['sentenceId'],
-                        start_w_id, end_w_id))
+                        start_w_id, end_w_id, str(e)))
 
 
 def load_annotation_from_csv(corpus, filename, annotation_name):
