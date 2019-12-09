@@ -361,9 +361,9 @@ def read_annotation_from_csv(corpus, fp, annotation_name):
                 raise Exception('No word ID')
             if s_id >= len(corpus.documents[doc_id].sentences):
                 raise Exception('Sentence ID out of range.')
-            if start_w_id < 0 or start_w_id >= len(corpus.documents[doc_id].sentences[s_id]):
+            if start_w_id < 1 or start_w_id > len(corpus.documents[doc_id].sentences[s_id]):
                 raise Exception('Span start ID out of range.')
-            if end_w_id < 0 or end_w_id >= len(corpus.documents[doc_id].sentences[s_id]):
+            if end_w_id < 1 or end_w_id > len(corpus.documents[doc_id].sentences[s_id]):
                 raise Exception('Span end ID out of range.')
             if '' in layer[1]:
                 corpus.documents[doc_id].sentences[s_id].spans[layer[0]].append(
