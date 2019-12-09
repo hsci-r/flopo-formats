@@ -51,7 +51,7 @@ def _finer_local_annotate(tokens):
     p.wait()
     return result
 
-http = PoolManager(retries=Retry(999,backoff_factor=0.5))
+http = PoolManager(retries=Retry(999,method_whitelist=False,backoff_factor=0.5))
 
 def _finer_remote_annotate(tokens):
     '''
