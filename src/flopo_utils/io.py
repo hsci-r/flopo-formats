@@ -8,6 +8,7 @@ from .data import Corpus, Document, Sentence, Token
 WEBANNO_LAYERS = {
     'Lemma' :'T_SP=de.tudarmstadt.ukp.dkpro.core.api.segmentation.type.Lemma',
     'POS' : 'T_SP=de.tudarmstadt.ukp.dkpro.core.api.lexmorph.type.pos.POS',
+    'MorphologicalFeatures' : 'T_SP=de.tudarmstadt.ukp.dkpro.core.api.lexmorph.type.morph.MorphologicalFeatures',
     'Dependency' : 'T_RL=de.tudarmstadt.ukp.dkpro.core.api.syntax.type.dependency.Dependency',
     'Hedging' : 'T_SP=webanno.custom.Hedging',
     'Quote' : 'T_SP=webanno.custom.Quote',
@@ -38,6 +39,11 @@ class CoNLLCorpusReader:
     PATTERN_SPACES_AFTER = re.compile('SpacesAfter=([^|]*)')
     SCHEMA = [('Lemma', ('value',)),
               ('POS', ('coarseValue', 'PosValue')),
+              ('MorphologicalFeatures',
+               ('animacy', 'aspect', 'case', 'definiteness', 'degree',
+                'gender', 'mood', 'negative', 'numType', 'number', 'person',
+                'possessive', 'pronType', 'reflex', 'tense', 'transitivity',
+                'value', 'verbForm', 'voice')),
               ('Dependency', ('DependencyType', 'flavor', 'head'))]
 
     def __init__(self):
@@ -45,7 +51,8 @@ class CoNLLCorpusReader:
         self.sen_id = None
         self.sentences = []
         self.tokens = []
-        self.spans = {'Lemma' : [], 'POS' : [], 'Dependency' : []}
+        self.spans = {'Lemma' : [], 'POS' : [], 'Dependency' : [],
+                      'MorphologicalFeatures' : []}
         self.idx = 0
         self.corpus = Corpus()
 
@@ -54,7 +61,8 @@ class CoNLLCorpusReader:
             s = Sentence(self.tokens, self.spans)
             self.sentences.append(s)
             self.tokens = []
-            self.spans = {'Lemma' : [], 'POS' : [], 'Dependency' : []}
+            self.spans = {'Lemma' : [], 'POS' : [], 'Dependency' : [],
+                          'MorphologicalFeatures' : []}
         self.sen_id = line['sentenceId'] if line is not None else None
 
     def _finalize_document(self, line):
@@ -75,6 +83,25 @@ class CoNLLCorpusReader:
         else:
             return ' '
 
+    def _parse_feats(self, feats):
+        def _uncapitalize(string):
+            return string[0].lower() + string[1:] if len(string) >= 0 \
+                   else string
+        if feats == '_':
+            return None
+        result = { key: '' for key in CoNLLCorpusReader.SCHEMA[2][1] }
+        if feats != '_':
+            for feat in feats.split('|'):
+                key, val = feat.split('=')
+                key = _uncapitalize(key)
+                if key in result:
+                    result[key] = val.lower()
+                # some special rules to cover differences between CoNLL and
+                # WebAnno-TSV formats
+                elif key == 'polarity' and val == 'Neg':
+                    result['negative'] = 'true'
+        return result
+
     def _read_token(self, line):
         space_after = self._determine_space_after(line)
         # FIXME for now, only distinguish between space or no space
@@ -93,6 +120,10 @@ class CoNLLCorpusReader:
         self.spans['POS'].append((
             t.tok_id, t.tok_id,
             { 'coarseValue' : line['upos'], 'PosValue' : line['xpos'] }))
+        feats = self._parse_feats(line['feats'])
+        if feats is not None:
+            self.spans['MorphologicalFeatures'].append((
+                t.tok_id, t.tok_id, feats))
         self.spans['Dependency'].append((
             t.tok_id, t.tok_id,
             { 'DependencyType' : line['deprel'], 'flavor' : '',
@@ -416,6 +447,11 @@ def write_prolog(document, fp):
             head = '{}-{}'.format(s_id, values['head'])
             results.append(('head', s_id, start, head))
             results.append(('deprel', s_id, start, values['DependencyType']))
+        for (start, end, values) in s.spans['MorphologicalFeatures']:
+            for key, val in values.items():
+                if val:
+                    results.append(('morph', s_id, start,
+                                    '{}({})'.format(key, val)))
     results.sort()
     for predicate, s_id, t_id, arg in results:
         fp.write('{}({}-{}, {}).\n'.format(predicate, s_id, t_id, arg))
