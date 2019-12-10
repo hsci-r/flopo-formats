@@ -1,4 +1,5 @@
 import argparse
+import logging
 import os
 import os.path
 
@@ -11,7 +12,6 @@ def load_corpus(corpus_dir):
     corpus = Corpus()
     for dirpath, dirnames, filenames in os.walk(corpus_dir):
         for f in filenames:
-            print(os.path.join(dirpath, f))
             doc_id = f.replace('.tsv', '')
             corpus.documents[doc_id] = load_webanno_tsv(os.path.join(dirpath, f))
     return corpus
@@ -39,15 +39,22 @@ def parse_arguments():
         help='input directory containing WebAnno-TSV files.')
     parser.add_argument('-O', '--output-dir', metavar='DIR',
         help='output directory (see above)')
+    parser.add_argument(\
+        '-L', '--logging', default='WARNING',
+        choices=['DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL'],
+        help='logging level')
     return parser.parse_args()
 
 
 def main():
     args = parse_arguments()
+    logging.basicConfig(
+        level=args.logging,
+        format='%(asctime)s - %(levelname)s - %(message)s',
+        datefmt='%Y-%m-%d %H:%M')
     corpus = load_corpus(args.input_dir)
     for a in args.annotations:
         layer, filename = parse_annotation_source(a)
-        print(layer, filename)
         load_annotation_from_csv(corpus, filename, layer)
     for doc_id, doc in corpus.items():
         save_webanno_tsv(doc, os.path.join(args.output_dir, doc_id))

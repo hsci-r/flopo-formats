@@ -1,6 +1,6 @@
 import csv
+import logging
 import re
-import warnings
 
 from .data import Corpus, Document, Sentence, Token
 
@@ -335,50 +335,58 @@ EXCLUDE_CSV_KEYS = { 'articleId', 'paragraphId', 'sentenceId', 'wordId',
                      'startWordId', 'endWordId' }
 
 
-def read_annotation_from_csv(corpus, fp, annotation_name):
+def read_annotation_from_csv(corpus, fp, layer):
+
+    def _parse_line(line, features):
+        s_id = int(line['sentenceId'])-1
+        start_w_id, end_w_id = None, None
+        if 'startWordId' in line and 'endWordId' in line:
+            start_w_id = int(line['startWordId'])
+            end_w_id = int(line['endWordId'])
+        elif 'wordId' in line:
+            start_w_id = int(line['wordId'])
+            end_w_id = int(line['wordId'])
+        else:
+            raise Exception('No word ID')
+        values = { '' : '' } if '' in features \
+                 else { key : line[key] for key in line \
+                        if key not in EXCLUDE_CSV_KEYS }
+        return s_id, start_w_id, end_w_id, values
+
+    def _check_boundaries(doc, s_id, start_w_id, end_w_id):
+        if s_id >= len(doc.sentences):
+            raise Exception('Sentence ID out of range')
+        if start_w_id < 1 or start_w_id > len(doc.sentences[s_id]):
+            raise Exception('Span start ID out of range')
+        if end_w_id < 1 or end_w_id > len(doc.sentences[s_id]):
+            raise Exception('Span end ID out of range')
+    
+    # determine the layer features from the CSV header
     reader = csv.DictReader(fp)
-    keys = [k for k in reader.fieldnames if k not in EXCLUDE_CSV_KEYS]
-    layer = (annotation_name,
-             tuple(keys) if keys else ('',))
+    features = tuple(k for k in reader.fieldnames if k not in EXCLUDE_CSV_KEYS)
+    if not features:
+        features = ('',)
+    # add the annotation layer in each document
     for doc_id in corpus.documents:
-        corpus.documents[doc_id].schema.append(layer)
+        corpus.documents[doc_id].schema.append((layer, features))
         for s in corpus.documents[doc_id].sentences:
-            s.spans[layer[0]] = []
+            s.spans[layer] = []
+    # read the annotation spans from CSV lines
     for line in reader:
         doc_id = line['articleId']
         if doc_id not in corpus.documents:
             continue
-        s_id = int(line['sentenceId'])-1
-        start_w_id, end_w_id = None, None
         try:
-            if 'startWordId' in line and 'endWordId' in line:
-                start_w_id = int(line['startWordId'])
-                end_w_id = int(line['endWordId'])
-            elif 'wordId' in line:
-                start_w_id = int(line['wordId'])
-                end_w_id = int(line['wordId'])
-            else:
-                raise Exception('No word ID')
-            if s_id >= len(corpus.documents[doc_id].sentences):
-                raise Exception('Sentence ID out of range.')
-            if start_w_id < 1 or start_w_id > len(corpus.documents[doc_id].sentences[s_id]):
-                raise Exception('Span start ID out of range.')
-            if end_w_id < 1 or end_w_id > len(corpus.documents[doc_id].sentences[s_id]):
-                raise Exception('Span end ID out of range.')
-            if '' in layer[1]:
-                corpus.documents[doc_id].sentences[s_id].spans[layer[0]].append(
-                    (start_w_id, end_w_id, { '' : '' }))
-            else:
-                corpus.documents[doc_id].sentences[s_id].spans[layer[0]].append(
-                    (start_w_id, end_w_id, 
-                     { key : line[key] for key in line \
-                           if key not in EXCLUDE_CSV_KEYS }))
+            s_id, start_w_id, end_w_id, values = _parse_line(line, features)
+            _check_boundaries(corpus[doc_id], s_id, start_w_id, end_w_id)
+            corpus[doc_id].sentences[s_id].spans[layer].append(
+                (start_w_id, end_w_id, values))
         except Exception as e:
-            warnings.warn(
-                'articleId={} sentenceId={} '
-                'start_w_id={} end_w_id={} failed with message: {}'\
-                .format(line['articleId'], line['sentenceId'],
-                        start_w_id, end_w_id, str(e)))
+            logging.warning(
+                '{}: layer={} articleId={} sentenceId={} start_w_id={}'\
+                ' end_w_id={}'\
+                .format(str(e), layer, line['articleId'],
+                        line['sentenceId'], start_w_id, end_w_id))
 
 
 def load_annotation_from_csv(corpus, filename, annotation_name):
