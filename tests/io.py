@@ -1,9 +1,10 @@
 import io
 import unittest
 
+from flopo_utils.data import Corpus
 from flopo_utils.io import \
     CoNLLCorpusReader, WebAnnoTSVReader, write_webanno_tsv, \
-    _webanno_escape, _webanno_unescape
+    _webanno_escape, _webanno_unescape, read_annotation_from_csv
 
 
 class CoNLLCorpusReaderTest(unittest.TestCase):
@@ -400,3 +401,195 @@ class WebAnnoTSVReadWriteTest(unittest.TestCase):
         write_webanno_tsv(doc, output)
         self.assertEqual(output.getvalue(), self.TEST_DOC)
     
+
+class ReadAnnotationTest(unittest.TestCase):
+    TEST_DOC = \
+'''#FORMAT=WebAnno TSV 3.2
+#T_SP=de.tudarmstadt.ukp.dkpro.core.api.segmentation.type.Lemma|value
+#T_SP=de.tudarmstadt.ukp.dkpro.core.api.lexmorph.type.pos.POS|coarseValue|PosValue
+#T_RL=de.tudarmstadt.ukp.dkpro.core.api.syntax.type.dependency.Dependency|DependencyType|flavor|BT_de.tudarmstadt.ukp.dkpro.core.api.lexmorph.type.pos.POS
+
+
+#Text=Yhteiskuntasopimusta pohjustetaan elokuussa
+1-1	0-20	Yhteiskuntasopimusta	yhteis#kunta#sopimus	NOUN	N	obj	*	1-2	
+1-2	21-33	pohjustetaan	pohjustaa	VERB	V	root	*	1-2	
+1-3	34-43	elokuussa	elokuu	NOUN	N	obl	*	1-2	
+
+#Text=– Juha Sipilän (kesk.) hallitus haluaa työmarkkinajärjestöjen kanssa laajan yhteiskuntasopimuksen, joka vauhdittaisi talouskasvua ja työllisyyttä.
+2-1	44-45	–	–	PUNCT	Punct	punct	*	2-8	
+2-2	46-50	Juha	Juha	PROPN	N	nmod:poss	*	2-7	
+2-3	51-58	Sipilän	Sipilä	PROPN	N	flat:name	*	2-2	
+2-4	59-60	(	(	PUNCT	Punct	punct	*	2-5	
+2-5	60-65	kesk.	kesko	NOUN	N	appos	*	2-2	
+2-6	65-66	)	)	PUNCT	Punct	punct	*	2-5	
+2-7	67-75	hallitus	hallitus	NOUN	N	nsubj	*	2-8	
+2-8	76-82	haluaa	haluta	VERB	V	root	*	2-8	
+2-9	83-105	työmarkkinajärjestöjen	työ#markkina#järjestö	NOUN	N	obl	*	2-8	
+2-10	106-112	kanssa	kanssa	ADP	Adp	case	*	2-9	
+2-11	113-119	laajan	laaja	ADJ	A	amod	*	2-12	
+2-12	120-141	yhteiskuntasopimuksen	yhteis#kunta#sopimus	NOUN	N	obj	*	2-8	
+2-13	141-142	,	,	PUNCT	Punct	punct	*	2-15	
+2-14	143-147	joka	joka	PRON	Pron	nsubj	*	2-15	
+2-15	148-160	vauhdittaisi	vauhdittaa	VERB	V	acl:relcl	*	2-12	
+2-16	161-173	talouskasvua	talous#kasvu	NOUN	N	obj	*	2-15	
+2-17	174-176	ja	ja	CCONJ	C	cc	*	2-18	
+2-18	177-189	työllisyyttä	työllisyys	NOUN	N	conj	*	2-16	
+2-19	189-190	.	.	PUNCT	Punct	punct	*	2-8	
+
+#Text=– Hallitus tekee torstaina työmarkkinajärjestöille esityksen toimista, joihin kuuluu yksikkötyökustannusten alentaminen vähintään 5 prosentilla ja muutosturva.
+3-1	191-192	–	–	PUNCT	Punct	punct	*	3-3	
+3-2	193-201	Hallitus	hallitus	NOUN	N	nsubj	*	3-3	
+3-3	202-207	tekee	tehdä	VERB	V	root	*	3-3	
+3-4	208-217	torstaina	torstai	NOUN	N	obl	*	3-3	
+3-5	218-241	työmarkkinajärjestöille	työ#markkina#järjestö	NOUN	N	obl	*	3-3	
+3-6	242-251	esityksen	esitys	NOUN	N	obj	*	3-3	
+3-7	252-260	toimista	toimi	NOUN	N	nmod	*	3-6	
+3-8	260-261	,	,	PUNCT	Punct	punct	*	3-10	
+3-9	262-268	joihin	joka	PRON	Pron	obl	*	3-10	
+3-10	269-275	kuuluu	kuulua	VERB	V	acl:relcl	*	3-7	
+3-11	276-298	yksikkötyökustannusten	yksikkö#työ#kustannus	NOUN	N	nmod:gobj	*	3-12	
+3-12	299-310	alentaminen	alentaminen	NOUN	N	nsubj	*	3-10	
+3-13	311-320	vähintään	vähintään	ADV	Adv	advmod	*	3-14	
+3-14	321-322	5	5	NUM	Num	nummod	*	3-15	
+3-15	323-334	prosentilla	prosentti	NOUN	N	nmod	*	3-12	
+3-16	335-337	ja	ja	CCONJ	C	cc	*	3-17	
+3-17	338-349	muutosturva	muutos#turva	NOUN	N	conj	*	3-12	
+3-18	349-350	.	.	PUNCT	Punct	punct	*	3-3	
+
+#Text=– Hallitus toivoo työmarkkinajärjestöjen sitoutuvan sopimukseen 21. elokuuta mennessä.
+4-1	351-352	–	–	PUNCT	Punct	punct	*	4-3	
+4-2	353-361	Hallitus	hallitus	NOUN	N	nsubj	*	4-3	
+4-3	362-368	toivoo	toivoa	VERB	V	root	*	4-3	
+4-4	369-391	työmarkkinajärjestöjen	työ#markkina#järjestö	NOUN	N	nsubj	*	4-5	
+4-5	392-402	sitoutuvan	sitoutua	VERB	V	xcomp:ds	*	4-3	
+4-6	403-414	sopimukseen	sopimus	NOUN	N	obl	*	4-5	
+4-7	415-418	21.	21.	ADJ	Num	obl	*	4-5	
+4-8	419-427	elokuuta	elokuu	NOUN	N	flat	*	4-7	
+4-9	428-436	mennessä	mennessä	ADP	Adp	case	*	4-7	
+4-10	436-437	.	.	PUNCT	Punct	punct	*	4-3	
+'''
+
+    TEST_DOC_OUT = \
+'''#FORMAT=WebAnno TSV 3.2
+#T_SP=de.tudarmstadt.ukp.dkpro.core.api.segmentation.type.Lemma|value
+#T_SP=de.tudarmstadt.ukp.dkpro.core.api.lexmorph.type.pos.POS|coarseValue|PosValue
+#T_RL=de.tudarmstadt.ukp.dkpro.core.api.syntax.type.dependency.Dependency|DependencyType|flavor|BT_de.tudarmstadt.ukp.dkpro.core.api.lexmorph.type.pos.POS
+#T_SP=de.tudarmstadt.ukp.dkpro.core.api.ner.type.NamedEntity|value
+#T_SP=webanno.custom.Quote|
+
+
+#Text=Yhteiskuntasopimusta pohjustetaan elokuussa
+1-1	0-20	Yhteiskuntasopimusta	yhteis#kunta#sopimus	NOUN	N	obj	*	1-2	_	_	
+1-2	21-33	pohjustetaan	pohjustaa	VERB	V	root	*	1-2	_	_	
+1-3	34-43	elokuussa	elokuu	NOUN	N	obl	*	1-2	TimexTmeDat	_	
+
+#Text=– Juha Sipilän (kesk.) hallitus haluaa työmarkkinajärjestöjen kanssa laajan yhteiskuntasopimuksen, joka vauhdittaisi talouskasvua ja työllisyyttä.
+2-1	44-45	–	–	PUNCT	Punct	punct	*	2-8	_	*[2]	
+2-2	46-50	Juha	Juha	PROPN	N	nmod:poss	*	2-7	EnamexPrsHum[1]	*[2]	
+2-3	51-58	Sipilän	Sipilä	PROPN	N	flat:name	*	2-2	EnamexPrsHum[1]	*[2]	
+2-4	59-60	(	(	PUNCT	Punct	punct	*	2-5	_	*[2]	
+2-5	60-65	kesk.	kesko	NOUN	N	appos	*	2-2	_	*[2]	
+2-6	65-66	)	)	PUNCT	Punct	punct	*	2-5	_	*[2]	
+2-7	67-75	hallitus	hallitus	NOUN	N	nsubj	*	2-8	_	*[2]	
+2-8	76-82	haluaa	haluta	VERB	V	root	*	2-8	_	*[2]	
+2-9	83-105	työmarkkinajärjestöjen	työ#markkina#järjestö	NOUN	N	obl	*	2-8	_	*[2]	
+2-10	106-112	kanssa	kanssa	ADP	Adp	case	*	2-9	_	*[2]	
+2-11	113-119	laajan	laaja	ADJ	A	amod	*	2-12	_	*[2]	
+2-12	120-141	yhteiskuntasopimuksen	yhteis#kunta#sopimus	NOUN	N	obj	*	2-8	_	*[2]	
+2-13	141-142	,	,	PUNCT	Punct	punct	*	2-15	_	*[2]	
+2-14	143-147	joka	joka	PRON	Pron	nsubj	*	2-15	_	*[2]	
+2-15	148-160	vauhdittaisi	vauhdittaa	VERB	V	acl:relcl	*	2-12	_	*[2]	
+2-16	161-173	talouskasvua	talous#kasvu	NOUN	N	obj	*	2-15	_	*[2]	
+2-17	174-176	ja	ja	CCONJ	C	cc	*	2-18	_	*[2]	
+2-18	177-189	työllisyyttä	työllisyys	NOUN	N	conj	*	2-16	_	*[2]	
+2-19	189-190	.	.	PUNCT	Punct	punct	*	2-8	_	*[2]	
+
+#Text=– Hallitus tekee torstaina työmarkkinajärjestöille esityksen toimista, joihin kuuluu yksikkötyökustannusten alentaminen vähintään 5 prosentilla ja muutosturva.
+3-1	191-192	–	–	PUNCT	Punct	punct	*	3-3	_	*[3]	
+3-2	193-201	Hallitus	hallitus	NOUN	N	nsubj	*	3-3	_	*[3]	
+3-3	202-207	tekee	tehdä	VERB	V	root	*	3-3	_	*[3]	
+3-4	208-217	torstaina	torstai	NOUN	N	obl	*	3-3	_	*[3]	
+3-5	218-241	työmarkkinajärjestöille	työ#markkina#järjestö	NOUN	N	obl	*	3-3	_	*[3]	
+3-6	242-251	esityksen	esitys	NOUN	N	obj	*	3-3	_	*[3]	
+3-7	252-260	toimista	toimi	NOUN	N	nmod	*	3-6	_	*[3]	
+3-8	260-261	,	,	PUNCT	Punct	punct	*	3-10	_	*[3]	
+3-9	262-268	joihin	joka	PRON	Pron	obl	*	3-10	_	*[3]	
+3-10	269-275	kuuluu	kuulua	VERB	V	acl:relcl	*	3-7	_	*[3]	
+3-11	276-298	yksikkötyökustannusten	yksikkö#työ#kustannus	NOUN	N	nmod:gobj	*	3-12	_	*[3]	
+3-12	299-310	alentaminen	alentaminen	NOUN	N	nsubj	*	3-10	_	*[3]	
+3-13	311-320	vähintään	vähintään	ADV	Adv	advmod	*	3-14	_	*[3]	
+3-14	321-322	5	5	NUM	Num	nummod	*	3-15	_	*[3]	
+3-15	323-334	prosentilla	prosentti	NOUN	N	nmod	*	3-12	_	*[3]	
+3-16	335-337	ja	ja	CCONJ	C	cc	*	3-17	_	*[3]	
+3-17	338-349	muutosturva	muutos#turva	NOUN	N	conj	*	3-12	_	*[3]	
+3-18	349-350	.	.	PUNCT	Punct	punct	*	3-3	_	*[3]	
+
+#Text=– Hallitus toivoo työmarkkinajärjestöjen sitoutuvan sopimukseen 21. elokuuta mennessä.
+4-1	351-352	–	–	PUNCT	Punct	punct	*	4-3	_	*[5]	
+4-2	353-361	Hallitus	hallitus	NOUN	N	nsubj	*	4-3	_	*[5]	
+4-3	362-368	toivoo	toivoa	VERB	V	root	*	4-3	_	*[5]	
+4-4	369-391	työmarkkinajärjestöjen	työ#markkina#järjestö	NOUN	N	nsubj	*	4-5	_	*[5]	
+4-5	392-402	sitoutuvan	sitoutua	VERB	V	xcomp:ds	*	4-3	_	*[5]	
+4-6	403-414	sopimukseen	sopimus	NOUN	N	obl	*	4-5	_	*[5]	
+4-7	415-418	21.	21.	ADJ	Num	obl	*	4-5	TimexTmeDat[4]	*[5]	
+4-8	419-427	elokuuta	elokuu	NOUN	N	flat	*	4-7	TimexTmeDat[4]	*[5]	
+4-9	428-436	mennessä	mennessä	ADP	Adp	case	*	4-7	_	*[5]	
+4-10	436-437	.	.	PUNCT	Punct	punct	*	4-3	_	*[5]	
+'''
+
+    TEST_ANN = {
+        'NamedEntity' : \
+'''articleId,sentenceId,startWordId,endWordId,value
+99511266,1,3,3,TimexTmeDat
+99511266,2,2,3,EnamexPrsHum
+99511266,4,7,8,TimexTmeDat''',
+        'Quote' : \
+'''articleId,paragraphId,sentenceId,startWordId,endWordId
+99511266,2,2,1,19
+99511266,3,3,1,18
+99511266,5,6,1,21
+99511266,7,9,1,11
+99511266,4,4,1,10
+99511266,4,5,1,6
+99511266,6,7,1,13
+99511266,6,8,1,15
+''',
+    }
+
+    def test_read_annotation(self):
+        corpus = Corpus()
+        corpus['99511266'] = \
+            WebAnnoTSVReader().read(io.StringIO(self.TEST_DOC))
+        for name, csv_content in self.TEST_ANN.items():
+            fp = io.StringIO(csv_content)
+            read_annotation_from_csv(corpus, fp, name)
+
+        # test whether the annotations were read
+        doc = corpus['99511266']
+        #   NamedEntity
+        self.assertEqual(len(doc.sentences[0].spans['NamedEntity']), 1)
+        self.assertEqual(len(doc.sentences[1].spans['NamedEntity']), 1)
+        self.assertEqual(len(doc.sentences[2].spans['NamedEntity']), 0)
+        self.assertEqual(len(doc.sentences[3].spans['NamedEntity']), 1)
+        self.assertIn(
+            (3, 3, { 'value': 'TimexTmeDat' }),
+            doc.sentences[0].spans['NamedEntity'])
+        self.assertIn(
+            (2, 3, { 'value': 'EnamexPrsHum' }),
+            doc.sentences[1].spans['NamedEntity'])
+        self.assertIn(
+            (7, 8, { 'value': 'TimexTmeDat' }),
+            doc.sentences[3].spans['NamedEntity'])
+        #   Quote
+        self.assertEqual(len(doc.sentences[0].spans['Quote']), 0)
+        self.assertEqual(len(doc.sentences[1].spans['Quote']), 1)
+        self.assertEqual(len(doc.sentences[2].spans['Quote']), 1)
+        self.assertEqual(len(doc.sentences[3].spans['Quote']), 1)
+        self.assertIn((1, 19, { '': '' }), doc.sentences[1].spans['Quote'])
+        self.assertIn((1, 18, { '': '' }), doc.sentences[2].spans['Quote'])
+        self.assertIn((1, 10, { '': '' }), doc.sentences[3].spans['Quote'])
+
+        self.maxDiff = None
+        output = io.StringIO()
+        write_webanno_tsv(doc, output)
+        self.assertEqual(output.getvalue(), self.TEST_DOC_OUT)
