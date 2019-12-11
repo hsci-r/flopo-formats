@@ -87,7 +87,7 @@ class CoNLLCorpusReader:
         def _uncapitalize(string):
             return string[0].lower() + string[1:] if len(string) >= 0 \
                    else string
-        if feats == '_':
+        if '=' not in feats:
             return None
         result = { key: '' for key in CoNLLCorpusReader.SCHEMA[2][1] }
         if feats != '_':
@@ -450,7 +450,7 @@ def write_prolog(document, fp):
         for (start, end, values) in s.spans['MorphologicalFeatures']:
             for key, val in values.items():
                 if val:
-                    results.append(('morph', s_id, start,
+                    results.append(('feats', s_id, start,
                                     '{}({})'.format(key, val)))
     results.sort()
     for predicate, s_id, t_id, arg in results:
