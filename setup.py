@@ -21,6 +21,7 @@ setup(
             'flopo-convert   = flopo_utils.scripts.convert:main',
             'flopo-finer     = flopo_utils.scripts.finer:main',
             'flopo-export    = flopo_utils.scripts.export:main',
+            'flopo-package   = flopo_utils.scripts.package:main',
         ]
     }
 )

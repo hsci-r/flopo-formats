@@ -19,14 +19,21 @@ python3 setup.py install --prefix=~/.local
 The package provides commands for manipulating FLOPO data. The usual pipeline
 consists of calls like this:
 ```
-flopo-convert -f csv -t webanno-tsv -i kiky.conll.csv -O webanno/
-flopo-finer -i kiky.conll.csv -o kiky.ner.csv
+mkdir -p data/work/webanno
+mkdir -p data/work/webanno-annotated
+flopo-convert -f csv -t webanno-tsv -i data/final/kiky.conll.csv -O data/work/webanno/
 flopo-annotate -a \
-	NamedEntity:kiky.ner.csv \
-	Quote:kiky.quotes.csv \
-	Metaphor:kiky.metaphors.csv \
-	Hedging:kiky.hedging.csv \
-	-I webanno/ -O webanno-annotated/
+	NamedEntity:data/final/kiky.ner.csv \
+	Quote:data/final/kiky.quotes.csv \
+	IQuote:data/final/kiky.iquotes.csv \
+	Metaphor:data/final/kiky.metaphors.csv \
+	Hedging:data/final/kiky.hedging.csv \
+	-I data/work/webanno/ -O data/work/webanno-annotated/
+flopo-package \
+	-I data/work/webanno-annotated/ \
+	-t data/raw/webanno-project-template.json \
+	-o data/final/kiky.zip \
+	-n 'Case KIKY'
 ```
 
 The commands are described below. Furthermore, each command has a `--help`
@@ -178,4 +185,26 @@ flopo-finer --remote -i kiky.conll.csv -o kiky.ner.csv
 ```
 
 The same using remote FINER.
+
+## `flopo-package`
+
+Package a corpus of WebAnno files as a project (zip file) ready to import to
+WebAnno.
+
+### Arguments
+
+- `-I`, `--input-dir` -- the directory containing WebAnno-TSV files,
+- `-t`, `--template-file` -- a JSON file containing a template of the project
+  metadata (in a format expected by WebAnno),
+- `-o`, `--output-file` -- the resulting zip file,
+- `-n`, `--name` -- the project name.
+
+### Examples
+
+```
+flopo-package \
+	-I data/work/webanno/ \
+	-t data/raw/webanno-project-template.json \
+	-o kiky.zip -n 'Case KIKY'
+```
 
