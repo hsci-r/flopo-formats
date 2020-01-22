@@ -121,11 +121,14 @@ Export the annotations from WebAnno files as text or CSV.
 
 ### Examples
 
+
+Print out the annotations from the layer `Metaphor` to a CSV file:
+
 ```
 flopo-export -a Metaphor -I webanno/ -o metaphors.csv
 ```
 
-Prints out the annotations from the layer `Metaphor` to a CSV file.
+Show the indirect quotes from a single document:
 
 ```
 $ flopo-export -a IQuote -i 99860144 -t -d '       ' | cut -f 6,8
@@ -138,7 +141,7 @@ Työmarkkinajohtajat     neuvottelut kestävät joitakin viikkoja
 Lyly    Osapuolilla ovat neuvotteluesitykset pöydällä ja niistä lähdetään vääntämään, SAK:n puheenjohtaja Lauri Lyly sanoi.
 ```
 
-Prints out the lemmas of all metaphors in a document.
+Print out the lemmas of all metaphors in a document:
 
 ```
 $ flopo-export -a Metaphor -i 99860144 -l Lemma.value
@@ -158,8 +161,6 @@ articleId,sentenceId,startWordId,endWordId,category,Lemma.value
 99860144,16,8,8,seed,vääntää
 99860144,18,8,8,extension1,neuvottelu
 ```
-
-Shows the indirect quotes from a single document.
 
 ## `flopo-finer`
 
