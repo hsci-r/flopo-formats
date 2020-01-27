@@ -197,8 +197,8 @@ WebAnno.
 - `-I`, `--input-dir` -- the directory containing WebAnno-TSV files,
 - `-t`, `--template-file` -- a JSON file containing a template of the project
   metadata (in a format expected by WebAnno),
-- `-o`, `--output-file` -- the resulting zip file,
-- `-n`, `--name` -- the project name.
+- `-n`, `--name` -- the project name,
+- `-o`, `--output-file` -- the resulting zip file (default: `NAME.zip`).
 
 ### Examples
 
