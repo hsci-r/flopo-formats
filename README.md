@@ -189,6 +189,10 @@ flopo-finer --remote -i kiky.conll.csv -o kiky.ner.csv
 
 The same using remote FINER.
 
+## `flopo-eval`
+
+TODO
+
 ## `flopo-package`
 
 Package a corpus of WebAnno files as a project (zip file) ready to import to
