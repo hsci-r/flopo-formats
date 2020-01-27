@@ -118,6 +118,8 @@ Export the annotations from WebAnno files as text or CSV.
 - `-d`, `--delimiter` -- the field delimiter for the output format (default:
   comma). If you want to do some further processing (e.g. with `cut` or `awk`),
   it is useful to set it to Tab.
+- `--doc-id` -- the document ID (optional; default: filename without `.tsv`
+  suffix)
 
 ### Examples
 

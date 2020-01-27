@@ -65,6 +65,10 @@ def parse_arguments():
     parser.add_argument(
         '-d', '--delimiter', default=',',
         help='Delimiter to separate the fields.')
+    parser.add_argument(
+        '--doc-id',
+        help='ID of the current document (default: filename '\
+             'without \'.tsv\' suffix).')
     return parser.parse_args()
 
 
@@ -78,7 +82,9 @@ def main():
     linearize = [x.split('.') for x in args.linearize] if args.linearize is not None else []
     if args.input_file is not None:
         doc = flopo_utils.io.load_webanno_tsv(args.input_file)
-        doc_id = os.path.basename(args.input_file).replace('.tsv', '')
+        doc_id = args.doc_id
+        if doc_id is None:
+            doc_id = os.path.basename(args.input_file).replace('.tsv', '')
         export_document(doc, writer, doc_id, args.annotation, header=first,
             text=args.text, linearize=linearize)
         first = False
