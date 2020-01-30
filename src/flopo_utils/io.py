@@ -436,6 +436,7 @@ def write_prolog(document, fp):
             results.append(
                 ('token', s_id, t_id,
                  '"{}"'.format(_prolog_escape(t.string))))
+        results.append(('eos', s_id, len(s.tokens), None))
         for (start, end, values) in s.spans['Lemma']:
             results.append(
                 ('lemma', s_id, start,
@@ -454,7 +455,10 @@ def write_prolog(document, fp):
                                     '{}({})'.format(key, val)))
     results.sort()
     for predicate, s_id, t_id, arg in results:
-        fp.write('{}({}-{}, {}).\n'.format(predicate, s_id, t_id, arg))
+        if arg is not None:
+            fp.write('{}({}-{}, {}).\n'.format(predicate, s_id, t_id, arg))
+        else:
+            fp.write('{}({}-{}).\n'.format(predicate, s_id, t_id))
 
 
 def save_prolog(document, filename):
