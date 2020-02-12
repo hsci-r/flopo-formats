@@ -23,7 +23,7 @@ WEBANNO_LAYERS_INV = { val: key for key, val in WEBANNO_LAYERS.items() }
 WEBANNO_FEATURES = {
     'head' : 'BT_de.tudarmstadt.ukp.dkpro.core.api.lexmorph.type.pos.POS',
     'type' : 'hedgingType',
-    'author' : 'ROLE_webanno.custom.IQuote:authorHead_webanno.custom.IQuoteAuthorHeadLink',
+    'author' : 'ROLE_webanno.custom.Quote:author_webanno.custom.QuoteAuthorLink',
     'authorHead' : 'de.tudarmstadt.ukp.dkpro.core.api.segmentation.type.Lemma'
 }
 WEBANNO_FEATURES_INV = { val: key for key, val in WEBANNO_FEATURES.items() }
@@ -332,6 +332,10 @@ def write_webanno_tsv(document, fp):
                         if value == '0':
                             value = start_idx
                         value = '{}-{}'.format(s_id, value)
+                    # exception rule: if feature is "author" and the value is
+                    # empty, this fact is marked by "_" instead of "*"
+                    if f == 'author' and value == '*':
+                        value = '_'
                     # for some weird reason, the annotations pointing to
                     # another token (like "head") must not contain a span ID
                     # (is this a WebAnno bug?)
