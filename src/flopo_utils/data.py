@@ -20,16 +20,18 @@ class Sentence:
 
 
 class Annotation:
-    def __init__(self, s_id, start, end, features):
-        self.s_id = s_id
-        self.start = start
-        self.end = end
+    def __init__(self, start_sen, start_tok, end_sen, end_tok, features):
+        self.start_sen = start_sen
+        self.start_tok = start_tok
+        self.end_sen = end_sen
+        self.end_tok = end_tok
         self.features = features
 
     def __eq__(self, other):
-        return self.s_id == other.s_id \
-            and self.start == other.start \
-            and self.end == other.end \
+        return self.start_sen == other.start_sen \
+            and self.start_tok == other.start_tok \
+            and self.end_sen == other.end_sen \
+            and self.end_tok == other.end_tok \
             and self.features == other.features
 
     def __getitem__(self, key):

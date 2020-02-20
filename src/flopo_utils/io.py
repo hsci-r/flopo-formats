@@ -117,19 +117,20 @@ class CoNLLCorpusReader:
         self.tokens.append(t)
         self.annotations['Lemma'].append(
             Annotation(
-                self.sen_id, t.tok_id, t.tok_id, { 'value' : line['lemma'] }))
+                self.sen_id, t.tok_id, self.sen_id, t.tok_id,
+                { 'value' : line['lemma'] }))
         self.annotations['POS'].append(
             Annotation(
-                self.sen_id, t.tok_id, t.tok_id,
+                self.sen_id, t.tok_id, self.sen_id, t.tok_id,
                 { 'coarseValue' : line['upos'], 'PosValue' : line['xpos'] }))
         feats = self._parse_feats(line['feats'])
         if feats is not None:
             self.annotations['MorphologicalFeatures'].append(
                 Annotation(
-                    self.sen_id, t.tok_id, t.tok_id, feats))
+                    self.sen_id, t.tok_id, self.sen_id, t.tok_id, feats))
         self.annotations['Dependency'].append(
             Annotation(
-                self.sen_id, t.tok_id, t.tok_id,
+                self.sen_id, t.tok_id, self.sen_id, t.tok_id,
                 { 'DependencyType' : line['deprel'], 'flavor' : '',
                   'head' : int(line['head']) }))
 
@@ -223,7 +224,7 @@ class WebAnnoTSVReader:
         sp = self.last_span[layer]
         if sp['id'] is not None:
             self.annotations[layer].append(
-                Annotation(self.sen_id, sp['start'], sp['end'], sp['values']))
+                Annotation(self.sen_id, sp['start'], self.sen_id, sp['end'], sp['values']))
         self.last_span[layer] = { 'id' : None, 'start' : None, 'end' : None,
                                   'values' : None }
 
@@ -242,7 +243,7 @@ class WebAnnoTSVReader:
             # (which indicates that there is no annotation)
             if not all(x is None for x in values.values()):
                 self.annotations[layer].append(
-                    Annotation(self.sen_id, tok_id, tok_id, values))
+                    Annotation(self.sen_id, tok_id, self.sen_id, tok_id, values))
         # span ID differing from the previous token
         # -> the span marked on the previous token ends there,
         #    a new span starts here
@@ -339,8 +340,8 @@ def write_webanno_tsv(document, fp):
         # point to itself (0 is not acceptable in WebAnno)
         if feature == 'head':
             if result == '0':
-                result = annotation.start
-            result = '{}-{}'.format(annotation.s_id, result)
+                result = annotation.start_tok
+            result = '{}-{}'.format(annotation.start_sen, result)
         # exception rule: if feature is "author" and the result is
         # empty, this fact is marked by "_" instead of "*"
         if feature == 'author' and result == '*':
@@ -356,7 +357,7 @@ def write_webanno_tsv(document, fp):
         for f in annotation:
             key = layer+'.'+f
             value = _format_value(annotation, f, span_id)
-            for i in range(annotation.start, annotation.end+1):
+            for i in range(annotation.start_tok, annotation.end_tok+1):
                 columns[key][i-1] = value
 
     def _format_token(s_id, i, t, columns):
@@ -376,7 +377,8 @@ def write_webanno_tsv(document, fp):
         for layer, annotations in s.annotations.items():
             for a in annotations:
                 span_id = None
-                if a.end > a.start:         # only multi-token spans have IDs
+                # only multi-token spans have IDs
+                if (a.end_sen, a.end_tok) > (a.start_sen, a.start_tok):
                     span_id = last_span_id
                     last_span_id += 1
                 _insert_annotation(a, layer, span_id, columns)
@@ -449,7 +451,7 @@ def read_annotation_from_csv(corpus, fp, layer):
             s_id, start_w_id, end_w_id, values = _parse_line(line, features)
             _check_boundaries(corpus[doc_id], s_id, start_w_id, end_w_id)
             corpus[doc_id].sentences[s_id-1].annotations[layer].append(
-                Annotation(s_id, start_w_id, end_w_id, values))
+                Annotation(s_id, start_w_id, s_id, end_w_id, values))
         except Exception as e:
             logging.warning(
                 '{}: layer={} articleId={} sentenceId={} start_w_id={}'\
@@ -477,19 +479,19 @@ def write_prolog(document, fp):
         results.append(('eos', s_id, len(s.tokens), None))
         for a in s.annotations['Lemma']:
             results.append(
-                ('lemma', s_id, a.start,
+                ('lemma', s_id, a.start_tok,
                  '"{}"'.format(_prolog_escape(a['value']))))
         for a in s.annotations['POS']:
-            results.append(('upos', s_id, a.start, a['coarseValue'].lower()))
-            results.append(('xpos', s_id, a.start, a['PosValue'].lower()))
+            results.append(('upos', s_id, a.start_tok, a['coarseValue'].lower()))
+            results.append(('xpos', s_id, a.start_tok, a['PosValue'].lower()))
         for a in s.annotations['Dependency']:
             head = '{}-{}'.format(s_id, a['head'])
-            results.append(('head', s_id, a.start, head))
-            results.append(('deprel', s_id, a.start, a['DependencyType']))
+            results.append(('head', s_id, a.start_tok, head))
+            results.append(('deprel', s_id, a.start_tok, a['DependencyType']))
         for a in s.annotations['MorphologicalFeatures']:
             for key, val in a.items():
                 if val:
-                    results.append(('feats', s_id, a.start,
+                    results.append(('feats', s_id, a.start_tok,
                                     '{}({})'.format(key, val)))
     results.sort()
     for predicate, s_id, t_id, arg in results:
