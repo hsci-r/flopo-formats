@@ -311,52 +311,78 @@ class WebAnnoTSVReader:
 
 
 def write_webanno_tsv(document, fp):
-    last_span_id = 1
-    fp.write('#FORMAT=WebAnno TSV 3.2\n')
-    for layer, features in document.schema:
-        fp.write('#'+WEBANNO_LAYERS[layer]+'|'+'|'.join(
-            [(WEBANNO_FEATURES[f] if f in WEBANNO_FEATURES else f) \
-             for f in features])+'\n')
-    fp.write('\n')
-    for s_id, s in enumerate(document.sentences, 1):
+
+    def _write_file_header():
+        fp.write('#FORMAT=WebAnno TSV 3.2\n')
+        for layer, features in document.schema:
+            fp.write('#'+WEBANNO_LAYERS[layer]+'|'+'|'.join(
+                [(WEBANNO_FEATURES[f] if f in WEBANNO_FEATURES else f) \
+                 for f in features])+'\n')
         fp.write('\n')
-        fp.write('#Text={}\n'.format(str(s).replace('\\', '\\\\')))
-        columns = {}
+
+    def _write_sentence_header(sentence):
+        fp.write('\n')
+        fp.write('#Text={}\n'.format(str(sentence).replace('\\', '\\\\')))
+
+    def _create_empty_columns(sentence):
+        result = {}
         for layer, features in document.schema:
             for f in features:
                 key = layer+'.'+f
-                columns[key] = ['_'] * len(s.tokens)
+                result[key] = ['_'] * len(sentence.tokens)
+        return result
+
+    def _format_value(annotation, feature, span_id):
+        result = _webanno_escape(str(annotation[feature])) \
+                 if annotation[feature] != '' else '*'
+        # for Dependency layer: if the token is a root, let it
+        # point to itself (0 is not acceptable in WebAnno)
+        if feature == 'head':
+            if result == '0':
+                result = annotation.start
+            result = '{}-{}'.format(annotation.s_id, result)
+        # exception rule: if feature is "author" and the result is
+        # empty, this fact is marked by "_" instead of "*"
+        if feature == 'author' and result == '*':
+            result = '_'
+        # for some weird reason, the annotations pointing to
+        # another token (like "head") must not contain a span ID
+        # (is this a WebAnno bug?)
+        if span_id is not None and feature != 'authorHead':
+            result += '[{}]'.format(span_id)
+        return result
+
+    def _insert_annotation(annotation, layer, span_id, columns):
+        for f in annotation:
+            key = layer+'.'+f
+            value = _format_value(annotation, f, span_id)
+            for i in range(annotation.start, annotation.end+1):
+                columns[key][i-1] = value
+
+    def _format_token(s_id, i, t, columns):
+        return ['{}-{}'.format(s_id, t.tok_id),
+                '{}-{}'.format(t.start_idx, t.end_idx),
+                t.string] + \
+                [columns[layer+'.'+f][i] \
+                    for layer, features in document.schema \
+                    for f in features]
+
+    last_span_id = 1
+    _write_file_header()
+    for s_id, s in enumerate(document.sentences, 1):
+        _write_sentence_header(s)
+        columns = _create_empty_columns(s)
+        # fill the columns with feature values
         for layer, annotations in s.annotations.items():
             for a in annotations:
                 span_id = None
-                if a.end > a.start:
+                if a.end > a.start:         # only multi-token spans have IDs
                     span_id = last_span_id
                     last_span_id += 1
-                for f in a:
-                    key = layer+'.'+f
-                    value = _webanno_escape(str(a[f])) \
-                            if a[f] != '' else '*'
-                    if f == 'head':
-                        if value == '0':
-                            value = a.start
-                        value = '{}-{}'.format(s_id, value)
-                    # exception rule: if feature is "author" and the value is
-                    # empty, this fact is marked by "_" instead of "*"
-                    if f == 'author' and value == '*':
-                        value = '_'
-                    # for some weird reason, the annotations pointing to
-                    # another token (like "head") must not contain a span ID
-                    # (is this a WebAnno bug?)
-                    if span_id is not None and f != 'authorHead':
-                        value += '[{}]'.format(span_id)
-                    for i in range(a.start, a.end+1):
-                        columns[key][i-1] = value
+                _insert_annotation(a, layer, span_id, columns)
+        # write the tokens
         for i, t in enumerate(s.tokens):
-            fp.write('\t'.join([
-                '{}-{}'.format(s_id, t.tok_id),
-                '{}-{}'.format(t.start_idx, t.end_idx),
-                t.string] + \
-                [columns[layer+'.'+f][i] for layer, features in document.schema for f in features])+'\t\n')
+            fp.write('\t'.join(_format_token(s_id, i, t, columns))+'\t\n')
 
 
 def save_webanno_tsv(document, filename):
