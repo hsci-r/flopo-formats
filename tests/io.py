@@ -1,7 +1,7 @@
 import io
 import unittest
 
-from flopo_utils.data import Corpus
+from flopo_utils.data import Corpus, Annotation
 from flopo_utils.io import \
     CoNLLCorpusReader, WebAnnoTSVReader, write_webanno_tsv, \
     _webanno_escape, _webanno_unescape, read_annotation_from_csv
@@ -126,6 +126,17 @@ class CoNLLCorpusReaderTest(unittest.TestCase):
 
         # TODO test the start and end indices of last tokens
 
+        #100023169,2,2,8,on,olla,AUX,V,...
+        self.assertIn(
+            Annotation(2, 8, 8, { 'value' : 'olla' }),
+            corpus['100023169'].sentences[1].annotations['Lemma'])
+        self.assertIn(
+            Annotation(2, 8, 8, { 'value' : 'olla' }),
+            corpus['100023169'].sentences[1].annotations['Lemma'])
+        self.assertIn(
+            Annotation(2, 8, 8, { 'coarseValue' : 'AUX', 'PosValue' : 'V' }),
+            corpus['100023169'].sentences[1].annotations['POS'])
+
 
 class WebAnnoEscapeTest(unittest.TestCase):
 
@@ -181,17 +192,17 @@ class WebAnnoEscapeTest(unittest.TestCase):
         doc = WebAnnoTSVReader().read(io.StringIO(self.TEST_DOC))
 
         # check the (unescaped) lemma values
-        sp = doc.sentences[0].spans['Lemma']
-        self.assertEqual(sp[0][2]['value'], '\\')
-        self.assertEqual(sp[1][2]['value'], '[')
-        self.assertEqual(sp[2][2]['value'], ']')
-        self.assertEqual(sp[3][2]['value'], 'c\\[ompl]ic|at_ed->lemma;LOL*')
-        self.assertEqual(sp[4][2]['value'], '|')
-        self.assertEqual(sp[5][2]['value'], '|')
-        self.assertEqual(sp[6][2]['value'], '_')
-        self.assertEqual(sp[7][2]['value'], '->')
-        self.assertEqual(sp[8][2]['value'], ';')
-        self.assertEqual(sp[9][2]['value'], '*')
+        anns = doc.sentences[0].annotations['Lemma']
+        self.assertEqual(anns[0]['value'], '\\')
+        self.assertEqual(anns[1]['value'], '[')
+        self.assertEqual(anns[2]['value'], ']')
+        self.assertEqual(anns[3]['value'], 'c\\[ompl]ic|at_ed->lemma;LOL*')
+        self.assertEqual(anns[4]['value'], '|')
+        self.assertEqual(anns[5]['value'], '|')
+        self.assertEqual(anns[6]['value'], '_')
+        self.assertEqual(anns[7]['value'], '->')
+        self.assertEqual(anns[8]['value'], ';')
+        self.assertEqual(anns[9]['value'], '*')
 
         # write and check whether it is identical to the original
         output = io.StringIO()
@@ -281,55 +292,61 @@ class WebAnnoTSVReaderTest(unittest.TestCase):
         self.assertEqual(len(doc.sentences[3]), 10)
         # test the annotations
         #   NamedEntity
-        self.assertEqual(len(doc.sentences[0].spans['NamedEntity']), 1)
-        self.assertEqual(len(doc.sentences[1].spans['NamedEntity']), 2)
-        self.assertEqual(len(doc.sentences[2].spans['NamedEntity']), 0)
-        self.assertEqual(len(doc.sentences[3].spans['NamedEntity']), 1)
+        self.assertEqual(len(doc.sentences[0].annotations['NamedEntity']), 1)
+        self.assertEqual(len(doc.sentences[1].annotations['NamedEntity']), 2)
+        self.assertEqual(len(doc.sentences[2].annotations['NamedEntity']), 0)
+        self.assertEqual(len(doc.sentences[3].annotations['NamedEntity']), 1)
         self.assertIn(
-            (3, 3, { 'value': 'TimexTmeDat' }),
-            doc.sentences[0].spans['NamedEntity'])
+            Annotation(1, 3, 3, { 'value': 'TimexTmeDat' }),
+            doc.sentences[0].annotations['NamedEntity'])
         self.assertIn(
-            (2, 3, { 'value': 'EnamexPrsHum' }),
-            doc.sentences[1].spans['NamedEntity'])
+            Annotation(2, 2, 3, { 'value': 'EnamexPrsHum' }),
+            doc.sentences[1].annotations['NamedEntity'])
         self.assertIn(
-            (5, 5, { 'value': 'EnamexOrgPlt' }),
-            doc.sentences[1].spans['NamedEntity'])
+            Annotation(2, 5, 5, { 'value': 'EnamexOrgPlt' }),
+            doc.sentences[1].annotations['NamedEntity'])
         self.assertIn(
-            (7, 8, { 'value': 'TimexTmeDat' }),
-            doc.sentences[3].spans['NamedEntity'])
+            Annotation(4, 7, 8, { 'value': 'TimexTmeDat' }),
+            doc.sentences[3].annotations['NamedEntity'])
         #   Quote
-        self.assertEqual(len(doc.sentences[0].spans['Quote']), 0)
-        self.assertEqual(len(doc.sentences[1].spans['Quote']), 1)
-        self.assertEqual(len(doc.sentences[2].spans['Quote']), 1)
-        self.assertEqual(len(doc.sentences[3].spans['Quote']), 1)
-        self.assertIn((1, 19, {'' : ''}), doc.sentences[1].spans['Quote'])
-        self.assertIn((1, 18, {'' : ''}), doc.sentences[2].spans['Quote'])
-        self.assertIn((1, 10, {'' : ''}), doc.sentences[3].spans['Quote'])
+        self.assertEqual(len(doc.sentences[0].annotations['Quote']), 0)
+        self.assertEqual(len(doc.sentences[1].annotations['Quote']), 1)
+        self.assertEqual(len(doc.sentences[2].annotations['Quote']), 1)
+        self.assertEqual(len(doc.sentences[3].annotations['Quote']), 1)
+        self.assertIn(
+            Annotation(2, 1, 19, {'' : ''}),
+            doc.sentences[1].annotations['Quote'])
+        self.assertIn(
+            Annotation(3, 1, 18, {'' : ''}),
+            doc.sentences[2].annotations['Quote'])
+        self.assertIn(
+            Annotation(4, 1, 10, {'' : ''}),
+            doc.sentences[3].annotations['Quote'])
         #   Metaphor
-        self.assertEqual(len(doc.sentences[0].spans['Metaphor']), 0)
-        self.assertEqual(len(doc.sentences[1].spans['Metaphor']), 1)
-        self.assertEqual(len(doc.sentences[2].spans['Metaphor']), 2)
-        self.assertEqual(len(doc.sentences[3].spans['Metaphor']), 1)
+        self.assertEqual(len(doc.sentences[0].annotations['Metaphor']), 0)
+        self.assertEqual(len(doc.sentences[1].annotations['Metaphor']), 1)
+        self.assertEqual(len(doc.sentences[2].annotations['Metaphor']), 2)
+        self.assertEqual(len(doc.sentences[3].annotations['Metaphor']), 1)
         self.assertIn(
-            (15, 15, { 'category': 'extension1' }),
-            doc.sentences[1].spans['Metaphor'])
+            Annotation(2, 15, 15, { 'category': 'extension1' }),
+            doc.sentences[1].annotations['Metaphor'])
         self.assertIn(
-            (7, 7, { 'category': 'seed' }),
-            doc.sentences[2].spans['Metaphor'])
+            Annotation(3, 7, 7, { 'category': 'seed' }),
+            doc.sentences[2].annotations['Metaphor'])
         self.assertIn(
-            (12, 12, { 'category': 'extension1' }),
-            doc.sentences[2].spans['Metaphor'])
+            Annotation(3, 12, 12, { 'category': 'extension1' }),
+            doc.sentences[2].annotations['Metaphor'])
         self.assertIn(
-            (3, 3, { 'category': 'seed' }),
-            doc.sentences[3].spans['Metaphor'])
+            Annotation(4, 3, 3, { 'category': 'seed' }),
+            doc.sentences[3].annotations['Metaphor'])
         #   Hedging
-        self.assertEqual(len(doc.sentences[0].spans['Hedging']), 0)
-        self.assertEqual(len(doc.sentences[1].spans['Hedging']), 0)
-        self.assertEqual(len(doc.sentences[2].spans['Hedging']), 0)
-        self.assertEqual(len(doc.sentences[3].spans['Hedging']), 1)
+        self.assertEqual(len(doc.sentences[0].annotations['Hedging']), 0)
+        self.assertEqual(len(doc.sentences[1].annotations['Hedging']), 0)
+        self.assertEqual(len(doc.sentences[2].annotations['Hedging']), 0)
+        self.assertEqual(len(doc.sentences[3].annotations['Hedging']), 1)
         self.assertIn(
-            (3, 3, { 'type': 'P' }),
-            doc.sentences[3].spans['Hedging'])
+            Annotation(4, 3, 3, { 'type': 'P' }),
+            doc.sentences[3].annotations['Hedging'])
         # check whether detokenized sentences are equal to the Text headers
         lines = self.TEST_DOC.split('\n')
         self.assertEqual('#Text=' + str(doc.sentences[0]), lines[10])
@@ -567,27 +584,33 @@ class ReadAnnotationTest(unittest.TestCase):
         # test whether the annotations were read
         doc = corpus['99511266']
         #   NamedEntity
-        self.assertEqual(len(doc.sentences[0].spans['NamedEntity']), 1)
-        self.assertEqual(len(doc.sentences[1].spans['NamedEntity']), 1)
-        self.assertEqual(len(doc.sentences[2].spans['NamedEntity']), 0)
-        self.assertEqual(len(doc.sentences[3].spans['NamedEntity']), 1)
+        self.assertEqual(len(doc.sentences[0].annotations['NamedEntity']), 1)
+        self.assertEqual(len(doc.sentences[1].annotations['NamedEntity']), 1)
+        self.assertEqual(len(doc.sentences[2].annotations['NamedEntity']), 0)
+        self.assertEqual(len(doc.sentences[3].annotations['NamedEntity']), 1)
         self.assertIn(
-            (3, 3, { 'value': 'TimexTmeDat' }),
-            doc.sentences[0].spans['NamedEntity'])
+            Annotation(1, 3, 3, { 'value': 'TimexTmeDat' }),
+            doc.sentences[0].annotations['NamedEntity'])
         self.assertIn(
-            (2, 3, { 'value': 'EnamexPrsHum' }),
-            doc.sentences[1].spans['NamedEntity'])
+            Annotation(2, 2, 3, { 'value': 'EnamexPrsHum' }),
+            doc.sentences[1].annotations['NamedEntity'])
         self.assertIn(
-            (7, 8, { 'value': 'TimexTmeDat' }),
-            doc.sentences[3].spans['NamedEntity'])
+            Annotation(4, 7, 8, { 'value': 'TimexTmeDat' }),
+            doc.sentences[3].annotations['NamedEntity'])
         #   Quote
-        self.assertEqual(len(doc.sentences[0].spans['Quote']), 0)
-        self.assertEqual(len(doc.sentences[1].spans['Quote']), 1)
-        self.assertEqual(len(doc.sentences[2].spans['Quote']), 1)
-        self.assertEqual(len(doc.sentences[3].spans['Quote']), 1)
-        self.assertIn((1, 19, { '': '' }), doc.sentences[1].spans['Quote'])
-        self.assertIn((1, 18, { '': '' }), doc.sentences[2].spans['Quote'])
-        self.assertIn((1, 10, { '': '' }), doc.sentences[3].spans['Quote'])
+        self.assertEqual(len(doc.sentences[0].annotations['Quote']), 0)
+        self.assertEqual(len(doc.sentences[1].annotations['Quote']), 1)
+        self.assertEqual(len(doc.sentences[2].annotations['Quote']), 1)
+        self.assertEqual(len(doc.sentences[3].annotations['Quote']), 1)
+        self.assertIn(
+            Annotation(2, 1, 19, { '': '' }),
+            doc.sentences[1].annotations['Quote'])
+        self.assertIn(
+            Annotation(3, 1, 18, { '': '' }),
+            doc.sentences[2].annotations['Quote'])
+        self.assertIn(
+            Annotation(4, 1, 10, { '': '' }),
+            doc.sentences[3].annotations['Quote'])
 
         self.maxDiff = None
         output = io.StringIO()

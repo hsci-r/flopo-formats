@@ -8,15 +8,38 @@ class Token:
 
 
 class Sentence:
-    def __init__(self, tokens, spans=None):
+    def __init__(self, tokens, annotations=None):
         self.tokens = tokens
-        self.spans = spans if spans is not None else {}
+        self.annotations = annotations if annotations is not None else {}
 
     def __len__(self):
         return len(self.tokens)
 
     def __str__(self):
         return ''.join([t.string+t.space_after for t in self.tokens]).strip()
+
+
+class Annotation:
+    def __init__(self, s_id, start, end, features):
+        self.s_id = s_id
+        self.start = start
+        self.end = end
+        self.features = features
+
+    def __eq__(self, other):
+        return self.s_id == other.s_id \
+            and self.start == other.start \
+            and self.end == other.end \
+            and self.features == other.features
+
+    def __getitem__(self, key):
+        return self.features[key]
+
+    def items(self):
+        return self.features.items()
+
+    def __iter__(self):
+        return self.features.__iter__()
 
 
 class Document:
