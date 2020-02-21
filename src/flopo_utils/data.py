@@ -5,7 +5,10 @@ class Token:
         self.end_idx = int(end_idx)
         self.string = string
         self.space_after = space_after
+        self.annotations = {}
 
+    def __getitem__(self, key):
+        return self.annotations[key]
 
 class Sentence:
     def __init__(self, tokens, annotations=None):

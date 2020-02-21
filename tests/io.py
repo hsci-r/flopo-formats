@@ -128,15 +128,12 @@ class CoNLLCorpusReaderTest(unittest.TestCase):
         # TODO test the start and end indices of last tokens
 
         #100023169,2,2,8,on,olla,AUX,V,...
-        self.assertIn(
-            Annotation(2, 8, 2, 8, { 'value' : 'olla' }),
-            corpus['100023169'].sentences[1].annotations['Lemma'])
-        self.assertIn(
-            Annotation(2, 8, 2, 8, { 'value' : 'olla' }),
-            corpus['100023169'].sentences[1].annotations['Lemma'])
-        self.assertIn(
-            Annotation(2, 8, 2, 8, { 'coarseValue' : 'AUX', 'PosValue' : 'V' }),
-            corpus['100023169'].sentences[1].annotations['POS'])
+        self.assertDictEqual(
+            { 'value' : 'olla' },
+            corpus['100023169'].sentences[1].tokens[7]['Lemma'])
+        self.assertDictEqual(
+            { 'coarseValue' : 'AUX', 'PosValue' : 'V' },
+            corpus['100023169'].sentences[1].tokens[7]['POS'])
 
 
 class WebAnnoEscapeTest(unittest.TestCase):
@@ -193,17 +190,17 @@ class WebAnnoEscapeTest(unittest.TestCase):
         doc = WebAnnoTSVReader().read(io.StringIO(self.TEST_DOC))
 
         # check the (unescaped) lemma values
-        anns = doc.sentences[0].annotations['Lemma']
-        self.assertEqual(anns[0]['value'], '\\')
-        self.assertEqual(anns[1]['value'], '[')
-        self.assertEqual(anns[2]['value'], ']')
-        self.assertEqual(anns[3]['value'], 'c\\[ompl]ic|at_ed->lemma;LOL*')
-        self.assertEqual(anns[4]['value'], '|')
-        self.assertEqual(anns[5]['value'], '|')
-        self.assertEqual(anns[6]['value'], '_')
-        self.assertEqual(anns[7]['value'], '->')
-        self.assertEqual(anns[8]['value'], ';')
-        self.assertEqual(anns[9]['value'], '*')
+        toks = doc.sentences[0].tokens
+        self.assertEqual(toks[1]['Lemma']['value'], '\\')
+        self.assertEqual(toks[4]['Lemma']['value'], '[')
+        self.assertEqual(toks[6]['Lemma']['value'], ']')
+        self.assertEqual(toks[7]['Lemma']['value'], 'c\\[ompl]ic|at_ed->lemma;LOL*')
+        self.assertEqual(toks[8]['Lemma']['value'], '|')
+        self.assertEqual(toks[10]['Lemma']['value'], '|')
+        self.assertEqual(toks[12]['Lemma']['value'], '_')
+        self.assertEqual(toks[14]['Lemma']['value'], '->')
+        self.assertEqual(toks[17]['Lemma']['value'], ';')
+        self.assertEqual(toks[20]['Lemma']['value'], '*')
 
         # write and check whether it is identical to the original
         output = io.StringIO()
@@ -417,6 +414,7 @@ class WebAnnoTSVReadWriteTest(unittest.TestCase):
         doc = WebAnnoTSVReader().read(io.StringIO(self.TEST_DOC))
         output = io.StringIO()
         write_webanno_tsv(doc, output)
+        self.maxDiff = None
         self.assertEqual(output.getvalue(), self.TEST_DOC)
     
 

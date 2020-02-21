@@ -19,6 +19,11 @@ WEBANNO_LAYERS = {
 }
 WEBANNO_LAYERS_INV = { val: key for key, val in WEBANNO_LAYERS.items() }
 
+# The following layers are only annotated on single-token basis.
+# They are thus not stored as spans, but as token propertes.
+WEBANNO_SINGLE_TOKEN_LAYERS = \
+    { 'Lemma', 'POS', 'Dependency', 'MorphologicalFeatures' }
+
 # TODO this needs to be made less hard-coded (sorry for the English, it's late...)
 WEBANNO_FEATURES = {
     'head' : 'BT_de.tudarmstadt.ukp.dkpro.core.api.lexmorph.type.pos.POS',
@@ -51,18 +56,14 @@ class CoNLLCorpusReader:
         self.sen_id = None
         self.sentences = []
         self.tokens = []
-        self.annotations = {'Lemma' : [], 'POS' : [], 'Dependency' : [],
-                            'MorphologicalFeatures' : []}
         self.idx = 0
         self.corpus = Corpus()
 
     def _finalize_sentence(self, line):
         if self.tokens:
-            s = Sentence(self.tokens, self.annotations)
+            s = Sentence(self.tokens)
             self.sentences.append(s)
             self.tokens = []
-            self.annotations = {'Lemma' : [], 'POS' : [], 'Dependency' : [],
-                                'MorphologicalFeatures' : []}
         self.sen_id = int(line['sentenceId']) if line is not None else None
 
     def _finalize_document(self, line):
@@ -114,26 +115,16 @@ class CoNLLCorpusReader:
             self.idx+len(line['word']),
             line['word'],
             space_after=space_after)
-        self.tokens.append(t)
-        self.annotations['Lemma'].append(
-            Annotation(
-                self.sen_id, t.tok_id, self.sen_id, t.tok_id,
-                { 'value' : line['lemma'] }))
-        self.annotations['POS'].append(
-            Annotation(
-                self.sen_id, t.tok_id, self.sen_id, t.tok_id,
-                { 'coarseValue' : line['upos'], 'PosValue' : line['xpos'] }))
+        t.annotations['Lemma'] = { 'value' : line['lemma'] }
+        t.annotations['POS'] = \
+            { 'coarseValue' : line['upos'], 'PosValue' : line['xpos'] }
         feats = self._parse_feats(line['feats'])
         if feats is not None:
-            self.annotations['MorphologicalFeatures'].append(
-                Annotation(
-                    self.sen_id, t.tok_id, self.sen_id, t.tok_id, feats))
-        self.annotations['Dependency'].append(
-            Annotation(
-                self.sen_id, t.tok_id, self.sen_id, t.tok_id,
-                { 'DependencyType' : line['deprel'], 'flavor' : '',
-                  'head' : int(line['head']) }))
-
+            t.annotations['MorphologicalFeatures'] = feats
+        t.annotations['Dependency'] = \
+            { 'DependencyType' : line['deprel'], 'flavor' : '',
+              'head' : int(line['head']) }
+        self.tokens.append(t)
         self.idx += len(line['word']) + len(space_after)
 
 
@@ -228,37 +219,39 @@ class WebAnnoTSVReader:
         self.last_span[layer] = { 'id' : None, 'start' : None, 'end' : None,
                                   'values' : None }
 
-    def _process_token_annotation(self, layer, tok_id, values, span_ids):
+    def _process_token_annotation(self, layer, token, values, span_ids):
         span_ids_list = list(span_ids.values())
         span_id = span_ids_list[0]
         if not all(x == span_id or x is None for x in span_ids_list):
             raise Exception(\
                 'Differing span IDs in a multi-token annotation: {}'\
                 .format(span_ids_list))
+        if layer in WEBANNO_SINGLE_TOKEN_LAYERS:
+            token.annotations[layer] = values
         # if no span ID -> single-token annotation or no annotation
         # (if there was as span ID on the previous token, it ends there)
-        if span_id is None:
+        elif span_id is None:
             self._finalize_last_span(layer)
             # only add a single-token span if the values are not None
             # (which indicates that there is no annotation)
             if not all(x is None for x in values.values()):
                 self.annotations[layer].append(
-                    Annotation(self.sen_id, tok_id, self.sen_id, tok_id, values))
+                    Annotation(self.sen_id, token.tok_id, self.sen_id, token.tok_id, values))
         # span ID differing from the previous token
         # -> the span marked on the previous token ends there,
         #    a new span starts here
         elif self.last_span[layer]['id'] != span_id:
             self._finalize_last_span(layer)
             self.last_span[layer]['id'] = span_id
-            self.last_span[layer]['start'] = tok_id
-            self.last_span[layer]['end'] = tok_id
+            self.last_span[layer]['start'] = token.tok_id
+            self.last_span[layer]['end'] = token.tok_id
             self.last_span[layer]['values'] = values
         # span ID same as on the previous token and the values match
         # -> the current token continues the existing span
         elif self.last_span[layer]['id'] == span_id \
-                and self.last_span[layer]['end']+1 == tok_id \
+                and self.last_span[layer]['end']+1 == token.tok_id \
                 and self.last_span[layer]['values'] == values:
-            self.last_span[layer]['end'] = tok_id
+            self.last_span[layer]['end'] = token.tok_id
         else:
             # TODO what went wrong?
             # - span ID same but values don't match?
@@ -272,18 +265,24 @@ class WebAnnoTSVReader:
             if t.start_idx == self.tokens[i-1].end_idx:
                 self.tokens[i-1].space_after = ''
         for layer, features in self.schema:
-            self._finalize_last_span(layer)
+            if layer not in WEBANNO_SINGLE_TOKEN_LAYERS:
+                self._finalize_last_span(layer)
         self.sentences.append(Sentence(self.tokens, self.annotations))
         self.tokens = []
-        self.annotations = { layer: [] for layer, features in self.schema }
+        self.annotations = \
+            { layer: [] for layer, features in self.schema \
+                        if layer not in WEBANNO_SINGLE_TOKEN_LAYERS}
         self.sen_id += 1
 
     def read(self, fp):
         self.schema = self._read_header(fp)
-        self.annotations = { layer: [] for layer, features in self.schema }
+        self.annotations = \
+            { layer: [] for layer, features in self.schema \
+                        if layer not in WEBANNO_SINGLE_TOKEN_LAYERS}
         self.last_span = { layer: { 'id' : None, 'start' : None,
                                     'end' : None, 'values' : None } \
-                           for layer, features in self.schema }
+                           for layer, features in self.schema \
+                           if layer not in WEBANNO_SINGLE_TOKEN_LAYERS }
         for line in fp:
             line = line.rstrip()
             if not line:
@@ -305,8 +304,7 @@ class WebAnnoTSVReader:
                             values[f] = int(values[f][i+1:])
                             if values[f] == t.tok_id:
                                 values[f] = 0
-                    self._process_token_annotation(
-                        layer, t.tok_id, values, span_ids)
+                    self._process_token_annotation(layer, t, values, span_ids)
         self._finalize_sentence()
         return Document(self.schema, self.sentences)
 
@@ -333,15 +331,15 @@ def write_webanno_tsv(document, fp):
                 result[key] = ['_'] * len(sentence.tokens)
         return result
 
-    def _format_value(annotation, feature, span_id):
-        result = _webanno_escape(str(annotation[feature])) \
-                 if annotation[feature] != '' else '*'
+    def _format_value(value, feature, s_id, t_id, span_id):
+        result = _webanno_escape(str(value)) \
+                 if value != '' else '*'
         # for Dependency layer: if the token is a root, let it
         # point to itself (0 is not acceptable in WebAnno)
         if feature == 'head':
             if result == '0':
-                result = annotation.start_tok
-            result = '{}-{}'.format(annotation.start_sen, result)
+                result = t_id
+            result = '{}-{}'.format(s_id, result)
         # exception rule: if feature is "author" and the result is
         # empty, this fact is marked by "_" instead of "*"
         if feature == 'author' and result == '*':
@@ -353,11 +351,12 @@ def write_webanno_tsv(document, fp):
             result += '[{}]'.format(span_id)
         return result
 
-    def _insert_annotation(annotation, layer, span_id, columns):
-        for f in annotation:
+    def _insert_annotation(a, layer, span_id, columns):
+        for f in a:
             key = layer+'.'+f
-            value = _format_value(annotation, f, span_id)
-            for i in range(annotation.start_tok, annotation.end_tok+1):
+            # FIXME it is not necessary to pass sentence and token ID here
+            value = _format_value(a[f], f, a.start_sen, a.start_tok, span_id)
+            for i in range(a.start_tok, a.end_tok+1):
                 columns[key][i-1] = value
 
     def _format_token(s_id, i, t, columns):
@@ -373,7 +372,16 @@ def write_webanno_tsv(document, fp):
     for s_id, s in enumerate(document.sentences, 1):
         _write_sentence_header(s)
         columns = _create_empty_columns(s)
-        # fill the columns with feature values
+        # fill the columns with single-token annotations
+        # FIXME rewrite in a more readable way
+        for i, t in enumerate(s.tokens):
+            for layer in WEBANNO_SINGLE_TOKEN_LAYERS:
+                if layer in t.annotations:
+                    for f, val in t.annotations[layer].items():
+                        if val is not None:
+                            columns[layer+'.'+f][i] = \
+                                _format_value(val, f, s_id, t.tok_id, None)
+        # fill the columns with span feature values
         for layer, annotations in s.annotations.items():
             for a in annotations:
                 span_id = None
@@ -476,23 +484,21 @@ def write_prolog(document, fp):
             results.append(
                 ('token', s_id, t_id,
                  '"{}"'.format(_prolog_escape(t.string))))
+            lemma = _prolog_escape(t['Lemma']['value'])
+            results.append(('lemma', s_id, t_id, '"{}"'.format(lemma)))
+            pos = t['POS']
+            results.append(('upos', s_id, t_id, pos['coarseValue'].lower()))
+            results.append(('xpos', s_id, t_id, pos['PosValue'].lower()))
+            dep = t['Dependency']
+            head = '{}-{}'.format(s_id, dep['head'])
+            results.append(('head', s_id, t_id, head))
+            results.append(('deprel', s_id, t_id, dep['DependencyType']))
+            if 'MorphologicalFeatures' in t.annotations:
+                for key, val in t['MorphologicalFeatures'].items():
+                    if val:
+                        results.append(('feats', s_id, t_id,
+                                        '{}({})'.format(key, val)))
         results.append(('eos', s_id, len(s.tokens), None))
-        for a in s.annotations['Lemma']:
-            results.append(
-                ('lemma', s_id, a.start_tok,
-                 '"{}"'.format(_prolog_escape(a['value']))))
-        for a in s.annotations['POS']:
-            results.append(('upos', s_id, a.start_tok, a['coarseValue'].lower()))
-            results.append(('xpos', s_id, a.start_tok, a['PosValue'].lower()))
-        for a in s.annotations['Dependency']:
-            head = '{}-{}'.format(s_id, a['head'])
-            results.append(('head', s_id, a.start_tok, head))
-            results.append(('deprel', s_id, a.start_tok, a['DependencyType']))
-        for a in s.annotations['MorphologicalFeatures']:
-            for key, val in a.items():
-                if val:
-                    results.append(('feats', s_id, a.start_tok,
-                                    '{}({})'.format(key, val)))
     results.sort()
     for predicate, s_id, t_id, arg in results:
         if arg is not None:
