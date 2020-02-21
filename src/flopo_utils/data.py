@@ -11,9 +11,8 @@ class Token:
         return self.annotations[key]
 
 class Sentence:
-    def __init__(self, tokens, annotations=None):
+    def __init__(self, tokens):
         self.tokens = tokens
-        self.annotations = annotations if annotations is not None else {}
 
     def __len__(self):
         return len(self.tokens)
@@ -48,9 +47,10 @@ class Annotation:
 
 
 class Document:
-    def __init__(self, schema, sentences):
+    def __init__(self, schema, sentences, annotations=None):
         self.schema = schema.copy() if schema else []
         self.sentences = sentences
+        self.annotations = annotations if annotations is not None else {}
 
 
 class Corpus:

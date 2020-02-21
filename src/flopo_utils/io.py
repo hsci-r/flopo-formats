@@ -215,9 +215,12 @@ class WebAnnoTSVReader:
         sp = self.last_span[layer]
         if sp['id'] is not None:
             self.annotations[layer].append(
-                Annotation(self.sen_id, sp['start'], self.sen_id, sp['end'], sp['values']))
-        self.last_span[layer] = { 'id' : None, 'start' : None, 'end' : None,
-                                  'values' : None }
+                Annotation(
+                    sp['start_sen'], sp['start_tok'], sp['end_sen'],
+                    sp['end_tok'], sp['values']))
+        self.last_span[layer] = \
+            { 'id' : None, 'start_sen' : None, 'start_tok' : None,
+              'end_sen': None, 'end_tok': None, 'values' : None }
 
     def _process_token_annotation(self, layer, token, values, span_ids):
         span_ids_list = list(span_ids.values())
@@ -243,15 +246,18 @@ class WebAnnoTSVReader:
         elif self.last_span[layer]['id'] != span_id:
             self._finalize_last_span(layer)
             self.last_span[layer]['id'] = span_id
-            self.last_span[layer]['start'] = token.tok_id
-            self.last_span[layer]['end'] = token.tok_id
+            self.last_span[layer]['start_sen'] = self.sen_id
+            self.last_span[layer]['start_tok'] = token.tok_id
+            self.last_span[layer]['end_sen'] = self.sen_id
+            self.last_span[layer]['end_tok'] = token.tok_id
             self.last_span[layer]['values'] = values
         # span ID same as on the previous token and the values match
         # -> the current token continues the existing span
         elif self.last_span[layer]['id'] == span_id \
-                and self.last_span[layer]['end']+1 == token.tok_id \
+                and self.last_span[layer]['end_tok']+1 == token.tok_id \
                 and self.last_span[layer]['values'] == values:
-            self.last_span[layer]['end'] = token.tok_id
+            self.last_span[layer]['end_sen'] = self.sen_id
+            self.last_span[layer]['end_tok'] = token.tok_id
         else:
             # TODO what went wrong?
             # - span ID same but values don't match?
@@ -264,14 +270,8 @@ class WebAnnoTSVReader:
         for i, t in enumerate(self.tokens[1:], 1):
             if t.start_idx == self.tokens[i-1].end_idx:
                 self.tokens[i-1].space_after = ''
-        for layer, features in self.schema:
-            if layer not in WEBANNO_SINGLE_TOKEN_LAYERS:
-                self._finalize_last_span(layer)
-        self.sentences.append(Sentence(self.tokens, self.annotations))
+        self.sentences.append(Sentence(self.tokens))
         self.tokens = []
-        self.annotations = \
-            { layer: [] for layer, features in self.schema \
-                        if layer not in WEBANNO_SINGLE_TOKEN_LAYERS}
         self.sen_id += 1
 
     def read(self, fp):
@@ -305,8 +305,11 @@ class WebAnnoTSVReader:
                             if values[f] == t.tok_id:
                                 values[f] = 0
                     self._process_token_annotation(layer, t, values, span_ids)
+        for layer, features in self.schema:
+            if layer not in WEBANNO_SINGLE_TOKEN_LAYERS:
+                self._finalize_last_span(layer)
         self._finalize_sentence()
-        return Document(self.schema, self.sentences)
+        return Document(self.schema, self.sentences, self.annotations)
 
 
 def write_webanno_tsv(document, fp):
@@ -323,12 +326,14 @@ def write_webanno_tsv(document, fp):
         fp.write('\n')
         fp.write('#Text={}\n'.format(str(sentence).replace('\\', '\\\\')))
 
-    def _create_empty_columns(sentence):
+    def _create_empty_columns():
         result = {}
         for layer, features in document.schema:
             for f in features:
                 key = layer+'.'+f
-                result[key] = ['_'] * len(sentence.tokens)
+                result[key] = []
+                for s in document.sentences:
+                    result[key].append(['_'] * len(s))
         return result
 
     def _format_value(value, feature, s_id, t_id, span_id):
@@ -357,42 +362,42 @@ def write_webanno_tsv(document, fp):
             # FIXME it is not necessary to pass sentence and token ID here
             value = _format_value(a[f], f, a.start_sen, a.start_tok, span_id)
             for i in range(a.start_tok, a.end_tok+1):
-                columns[key][i-1] = value
+                columns[key][a.start_sen-1][i-1] = value
 
-    def _format_token(s_id, i, t, columns):
-        return ['{}-{}'.format(s_id, t.tok_id),
+    def _format_token(i, j, t, columns):
+        return ['{}-{}'.format(i+1, t.tok_id),
                 '{}-{}'.format(t.start_idx, t.end_idx),
                 t.string] + \
-                [columns[layer+'.'+f][i] \
+                [columns[layer+'.'+f][i][j] \
                     for layer, features in document.schema \
                     for f in features]
 
     last_span_id = 1
     _write_file_header()
-    for s_id, s in enumerate(document.sentences, 1):
+    columns = _create_empty_columns()
+    # fill the columns with span feature values
+    for layer, annotations in document.annotations.items():
+        for a in annotations:
+            span_id = None
+            # only multi-token spans have IDs
+            if (a.end_sen, a.end_tok) > (a.start_sen, a.start_tok):
+                span_id = last_span_id
+                last_span_id += 1
+            _insert_annotation(a, layer, span_id, columns)
+    for i, s in enumerate(document.sentences):
         _write_sentence_header(s)
-        columns = _create_empty_columns(s)
         # fill the columns with single-token annotations
         # FIXME rewrite in a more readable way
-        for i, t in enumerate(s.tokens):
+        for j, t in enumerate(s.tokens):
             for layer in WEBANNO_SINGLE_TOKEN_LAYERS:
                 if layer in t.annotations:
                     for f, val in t.annotations[layer].items():
                         if val is not None:
-                            columns[layer+'.'+f][i] = \
-                                _format_value(val, f, s_id, t.tok_id, None)
-        # fill the columns with span feature values
-        for layer, annotations in s.annotations.items():
-            for a in annotations:
-                span_id = None
-                # only multi-token spans have IDs
-                if (a.end_sen, a.end_tok) > (a.start_sen, a.start_tok):
-                    span_id = last_span_id
-                    last_span_id += 1
-                _insert_annotation(a, layer, span_id, columns)
+                            columns[layer+'.'+f][i][j] = \
+                                _format_value(val, f, i+1, j+1, None)
         # write the tokens
-        for i, t in enumerate(s.tokens):
-            fp.write('\t'.join(_format_token(s_id, i, t, columns))+'\t\n')
+        for j, t in enumerate(s.tokens):
+            fp.write('\t'.join(_format_token(i, j, t, columns))+'\t\n')
 
 
 def save_webanno_tsv(document, filename):
@@ -448,8 +453,7 @@ def read_annotation_from_csv(corpus, fp, layer):
     # add the annotation layer in each document
     for doc_id in corpus.documents:
         corpus.documents[doc_id].schema.append((layer, features))
-        for s in corpus.documents[doc_id].sentences:
-            s.annotations[layer] = []
+        corpus.documents[doc_id].annotations[layer] = []
     # read the annotation spans from CSV lines
     for line in reader:
         doc_id = line['articleId']
@@ -458,7 +462,7 @@ def read_annotation_from_csv(corpus, fp, layer):
         try:
             s_id, start_w_id, end_w_id, values = _parse_line(line, features)
             _check_boundaries(corpus[doc_id], s_id, start_w_id, end_w_id)
-            corpus[doc_id].sentences[s_id-1].annotations[layer].append(
+            corpus[doc_id].annotations[layer].append(
                 Annotation(s_id, start_w_id, s_id, end_w_id, values))
         except Exception as e:
             logging.warning(

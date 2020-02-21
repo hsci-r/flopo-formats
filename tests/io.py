@@ -290,61 +290,49 @@ class WebAnnoTSVReaderTest(unittest.TestCase):
         self.assertEqual(len(doc.sentences[3]), 10)
         # test the annotations
         #   NamedEntity
-        self.assertEqual(len(doc.sentences[0].annotations['NamedEntity']), 1)
-        self.assertEqual(len(doc.sentences[1].annotations['NamedEntity']), 2)
-        self.assertEqual(len(doc.sentences[2].annotations['NamedEntity']), 0)
-        self.assertEqual(len(doc.sentences[3].annotations['NamedEntity']), 1)
+        self.assertEqual(len(doc.annotations['NamedEntity']), 4)
         self.assertIn(
             Annotation(1, 3, 1, 3, { 'value': 'TimexTmeDat' }),
-            doc.sentences[0].annotations['NamedEntity'])
+            doc.annotations['NamedEntity'])
         self.assertIn(
             Annotation(2, 2, 2, 3, { 'value': 'EnamexPrsHum' }),
-            doc.sentences[1].annotations['NamedEntity'])
+            doc.annotations['NamedEntity'])
         self.assertIn(
             Annotation(2, 5, 2, 5, { 'value': 'EnamexOrgPlt' }),
-            doc.sentences[1].annotations['NamedEntity'])
+            doc.annotations['NamedEntity'])
         self.assertIn(
             Annotation(4, 7, 4, 8, { 'value': 'TimexTmeDat' }),
-            doc.sentences[3].annotations['NamedEntity'])
+            doc.annotations['NamedEntity'])
         #   Quote
-        self.assertEqual(len(doc.sentences[0].annotations['Quote']), 0)
-        self.assertEqual(len(doc.sentences[1].annotations['Quote']), 1)
-        self.assertEqual(len(doc.sentences[2].annotations['Quote']), 1)
-        self.assertEqual(len(doc.sentences[3].annotations['Quote']), 1)
+        self.assertEqual(len(doc.annotations['Quote']), 3)
         self.assertIn(
             Annotation(2, 1, 2, 19, {'' : ''}),
-            doc.sentences[1].annotations['Quote'])
+            doc.annotations['Quote'])
         self.assertIn(
             Annotation(3, 1, 3, 18, {'' : ''}),
-            doc.sentences[2].annotations['Quote'])
+            doc.annotations['Quote'])
         self.assertIn(
             Annotation(4, 1, 4, 10, {'' : ''}),
-            doc.sentences[3].annotations['Quote'])
+            doc.annotations['Quote'])
         #   Metaphor
-        self.assertEqual(len(doc.sentences[0].annotations['Metaphor']), 0)
-        self.assertEqual(len(doc.sentences[1].annotations['Metaphor']), 1)
-        self.assertEqual(len(doc.sentences[2].annotations['Metaphor']), 2)
-        self.assertEqual(len(doc.sentences[3].annotations['Metaphor']), 1)
+        self.assertEqual(len(doc.annotations['Metaphor']), 4)
         self.assertIn(
             Annotation(2, 15, 2, 15, { 'category': 'extension1' }),
-            doc.sentences[1].annotations['Metaphor'])
+            doc.annotations['Metaphor'])
         self.assertIn(
             Annotation(3, 7, 3, 7, { 'category': 'seed' }),
-            doc.sentences[2].annotations['Metaphor'])
+            doc.annotations['Metaphor'])
         self.assertIn(
             Annotation(3, 12, 3, 12, { 'category': 'extension1' }),
-            doc.sentences[2].annotations['Metaphor'])
+            doc.annotations['Metaphor'])
         self.assertIn(
             Annotation(4, 3, 4, 3, { 'category': 'seed' }),
-            doc.sentences[3].annotations['Metaphor'])
+            doc.annotations['Metaphor'])
         #   Hedging
-        self.assertEqual(len(doc.sentences[0].annotations['Hedging']), 0)
-        self.assertEqual(len(doc.sentences[1].annotations['Hedging']), 0)
-        self.assertEqual(len(doc.sentences[2].annotations['Hedging']), 0)
-        self.assertEqual(len(doc.sentences[3].annotations['Hedging']), 1)
+        self.assertEqual(len(doc.annotations['Hedging']), 1)
         self.assertIn(
             Annotation(4, 3, 4, 3, { 'type': 'P' }),
-            doc.sentences[3].annotations['Hedging'])
+            doc.annotations['Hedging'])
         # check whether detokenized sentences are equal to the Text headers
         lines = self.TEST_DOC.split('\n')
         self.assertEqual('#Text=' + str(doc.sentences[0]), lines[10])
@@ -500,45 +488,45 @@ class ReadAnnotationTest(unittest.TestCase):
 1-3	34-43	elokuussa	elokuu	NOUN	N	obl	*	1-2	TimexTmeDat	_	
 
 #Text=– Juha Sipilän (kesk.) hallitus haluaa työmarkkinajärjestöjen kanssa laajan yhteiskuntasopimuksen, joka vauhdittaisi talouskasvua ja työllisyyttä.
-2-1	44-45	–	–	PUNCT	Punct	punct	*	2-8	_	*[2]	
-2-2	46-50	Juha	Juha	PROPN	N	nmod:poss	*	2-7	EnamexPrsHum[1]	*[2]	
-2-3	51-58	Sipilän	Sipilä	PROPN	N	flat:name	*	2-2	EnamexPrsHum[1]	*[2]	
-2-4	59-60	(	(	PUNCT	Punct	punct	*	2-5	_	*[2]	
-2-5	60-65	kesk.	kesko	NOUN	N	appos	*	2-2	_	*[2]	
-2-6	65-66	)	)	PUNCT	Punct	punct	*	2-5	_	*[2]	
-2-7	67-75	hallitus	hallitus	NOUN	N	nsubj	*	2-8	_	*[2]	
-2-8	76-82	haluaa	haluta	VERB	V	root	*	2-8	_	*[2]	
-2-9	83-105	työmarkkinajärjestöjen	työ#markkina#järjestö	NOUN	N	obl	*	2-8	_	*[2]	
-2-10	106-112	kanssa	kanssa	ADP	Adp	case	*	2-9	_	*[2]	
-2-11	113-119	laajan	laaja	ADJ	A	amod	*	2-12	_	*[2]	
-2-12	120-141	yhteiskuntasopimuksen	yhteis#kunta#sopimus	NOUN	N	obj	*	2-8	_	*[2]	
-2-13	141-142	,	,	PUNCT	Punct	punct	*	2-15	_	*[2]	
-2-14	143-147	joka	joka	PRON	Pron	nsubj	*	2-15	_	*[2]	
-2-15	148-160	vauhdittaisi	vauhdittaa	VERB	V	acl:relcl	*	2-12	_	*[2]	
-2-16	161-173	talouskasvua	talous#kasvu	NOUN	N	obj	*	2-15	_	*[2]	
-2-17	174-176	ja	ja	CCONJ	C	cc	*	2-18	_	*[2]	
-2-18	177-189	työllisyyttä	työllisyys	NOUN	N	conj	*	2-16	_	*[2]	
-2-19	189-190	.	.	PUNCT	Punct	punct	*	2-8	_	*[2]	
+2-1	44-45	–	–	PUNCT	Punct	punct	*	2-8	_	*[3]	
+2-2	46-50	Juha	Juha	PROPN	N	nmod:poss	*	2-7	EnamexPrsHum[1]	*[3]	
+2-3	51-58	Sipilän	Sipilä	PROPN	N	flat:name	*	2-2	EnamexPrsHum[1]	*[3]	
+2-4	59-60	(	(	PUNCT	Punct	punct	*	2-5	_	*[3]	
+2-5	60-65	kesk.	kesko	NOUN	N	appos	*	2-2	_	*[3]	
+2-6	65-66	)	)	PUNCT	Punct	punct	*	2-5	_	*[3]	
+2-7	67-75	hallitus	hallitus	NOUN	N	nsubj	*	2-8	_	*[3]	
+2-8	76-82	haluaa	haluta	VERB	V	root	*	2-8	_	*[3]	
+2-9	83-105	työmarkkinajärjestöjen	työ#markkina#järjestö	NOUN	N	obl	*	2-8	_	*[3]	
+2-10	106-112	kanssa	kanssa	ADP	Adp	case	*	2-9	_	*[3]	
+2-11	113-119	laajan	laaja	ADJ	A	amod	*	2-12	_	*[3]	
+2-12	120-141	yhteiskuntasopimuksen	yhteis#kunta#sopimus	NOUN	N	obj	*	2-8	_	*[3]	
+2-13	141-142	,	,	PUNCT	Punct	punct	*	2-15	_	*[3]	
+2-14	143-147	joka	joka	PRON	Pron	nsubj	*	2-15	_	*[3]	
+2-15	148-160	vauhdittaisi	vauhdittaa	VERB	V	acl:relcl	*	2-12	_	*[3]	
+2-16	161-173	talouskasvua	talous#kasvu	NOUN	N	obj	*	2-15	_	*[3]	
+2-17	174-176	ja	ja	CCONJ	C	cc	*	2-18	_	*[3]	
+2-18	177-189	työllisyyttä	työllisyys	NOUN	N	conj	*	2-16	_	*[3]	
+2-19	189-190	.	.	PUNCT	Punct	punct	*	2-8	_	*[3]	
 
 #Text=– Hallitus tekee torstaina työmarkkinajärjestöille esityksen toimista, joihin kuuluu yksikkötyökustannusten alentaminen vähintään 5 prosentilla ja muutosturva.
-3-1	191-192	–	–	PUNCT	Punct	punct	*	3-3	_	*[3]	
-3-2	193-201	Hallitus	hallitus	NOUN	N	nsubj	*	3-3	_	*[3]	
-3-3	202-207	tekee	tehdä	VERB	V	root	*	3-3	_	*[3]	
-3-4	208-217	torstaina	torstai	NOUN	N	obl	*	3-3	_	*[3]	
-3-5	218-241	työmarkkinajärjestöille	työ#markkina#järjestö	NOUN	N	obl	*	3-3	_	*[3]	
-3-6	242-251	esityksen	esitys	NOUN	N	obj	*	3-3	_	*[3]	
-3-7	252-260	toimista	toimi	NOUN	N	nmod	*	3-6	_	*[3]	
-3-8	260-261	,	,	PUNCT	Punct	punct	*	3-10	_	*[3]	
-3-9	262-268	joihin	joka	PRON	Pron	obl	*	3-10	_	*[3]	
-3-10	269-275	kuuluu	kuulua	VERB	V	acl:relcl	*	3-7	_	*[3]	
-3-11	276-298	yksikkötyökustannusten	yksikkö#työ#kustannus	NOUN	N	nmod:gobj	*	3-12	_	*[3]	
-3-12	299-310	alentaminen	alentaminen	NOUN	N	nsubj	*	3-10	_	*[3]	
-3-13	311-320	vähintään	vähintään	ADV	Adv	advmod	*	3-14	_	*[3]	
-3-14	321-322	5	5	NUM	Num	nummod	*	3-15	_	*[3]	
-3-15	323-334	prosentilla	prosentti	NOUN	N	nmod	*	3-12	_	*[3]	
-3-16	335-337	ja	ja	CCONJ	C	cc	*	3-17	_	*[3]	
-3-17	338-349	muutosturva	muutos#turva	NOUN	N	conj	*	3-12	_	*[3]	
-3-18	349-350	.	.	PUNCT	Punct	punct	*	3-3	_	*[3]	
+3-1	191-192	–	–	PUNCT	Punct	punct	*	3-3	_	*[4]	
+3-2	193-201	Hallitus	hallitus	NOUN	N	nsubj	*	3-3	_	*[4]	
+3-3	202-207	tekee	tehdä	VERB	V	root	*	3-3	_	*[4]	
+3-4	208-217	torstaina	torstai	NOUN	N	obl	*	3-3	_	*[4]	
+3-5	218-241	työmarkkinajärjestöille	työ#markkina#järjestö	NOUN	N	obl	*	3-3	_	*[4]	
+3-6	242-251	esityksen	esitys	NOUN	N	obj	*	3-3	_	*[4]	
+3-7	252-260	toimista	toimi	NOUN	N	nmod	*	3-6	_	*[4]	
+3-8	260-261	,	,	PUNCT	Punct	punct	*	3-10	_	*[4]	
+3-9	262-268	joihin	joka	PRON	Pron	obl	*	3-10	_	*[4]	
+3-10	269-275	kuuluu	kuulua	VERB	V	acl:relcl	*	3-7	_	*[4]	
+3-11	276-298	yksikkötyökustannusten	yksikkö#työ#kustannus	NOUN	N	nmod:gobj	*	3-12	_	*[4]	
+3-12	299-310	alentaminen	alentaminen	NOUN	N	nsubj	*	3-10	_	*[4]	
+3-13	311-320	vähintään	vähintään	ADV	Adv	advmod	*	3-14	_	*[4]	
+3-14	321-322	5	5	NUM	Num	nummod	*	3-15	_	*[4]	
+3-15	323-334	prosentilla	prosentti	NOUN	N	nmod	*	3-12	_	*[4]	
+3-16	335-337	ja	ja	CCONJ	C	cc	*	3-17	_	*[4]	
+3-17	338-349	muutosturva	muutos#turva	NOUN	N	conj	*	3-12	_	*[4]	
+3-18	349-350	.	.	PUNCT	Punct	punct	*	3-3	_	*[4]	
 
 #Text=– Hallitus toivoo työmarkkinajärjestöjen sitoutuvan sopimukseen 21. elokuuta mennessä.
 4-1	351-352	–	–	PUNCT	Punct	punct	*	4-3	_	*[5]	
@@ -547,8 +535,8 @@ class ReadAnnotationTest(unittest.TestCase):
 4-4	369-391	työmarkkinajärjestöjen	työ#markkina#järjestö	NOUN	N	nsubj	*	4-5	_	*[5]	
 4-5	392-402	sitoutuvan	sitoutua	VERB	V	xcomp:ds	*	4-3	_	*[5]	
 4-6	403-414	sopimukseen	sopimus	NOUN	N	obl	*	4-5	_	*[5]	
-4-7	415-418	21.	21.	ADJ	Num	obl	*	4-5	TimexTmeDat[4]	*[5]	
-4-8	419-427	elokuuta	elokuu	NOUN	N	flat	*	4-7	TimexTmeDat[4]	*[5]	
+4-7	415-418	21.	21.	ADJ	Num	obl	*	4-5	TimexTmeDat[2]	*[5]	
+4-8	419-427	elokuuta	elokuu	NOUN	N	flat	*	4-7	TimexTmeDat[2]	*[5]	
 4-9	428-436	mennessä	mennessä	ADP	Adp	case	*	4-7	_	*[5]	
 4-10	436-437	.	.	PUNCT	Punct	punct	*	4-3	_	*[5]	
 '''
@@ -583,33 +571,27 @@ class ReadAnnotationTest(unittest.TestCase):
         # test whether the annotations were read
         doc = corpus['99511266']
         #   NamedEntity
-        self.assertEqual(len(doc.sentences[0].annotations['NamedEntity']), 1)
-        self.assertEqual(len(doc.sentences[1].annotations['NamedEntity']), 1)
-        self.assertEqual(len(doc.sentences[2].annotations['NamedEntity']), 0)
-        self.assertEqual(len(doc.sentences[3].annotations['NamedEntity']), 1)
+        self.assertEqual(len(doc.annotations['NamedEntity']), 3)
         self.assertIn(
             Annotation(1, 3, 1, 3, { 'value': 'TimexTmeDat' }),
-            doc.sentences[0].annotations['NamedEntity'])
+            doc.annotations['NamedEntity'])
         self.assertIn(
             Annotation(2, 2, 2, 3, { 'value': 'EnamexPrsHum' }),
-            doc.sentences[1].annotations['NamedEntity'])
+            doc.annotations['NamedEntity'])
         self.assertIn(
             Annotation(4, 7, 4, 8, { 'value': 'TimexTmeDat' }),
-            doc.sentences[3].annotations['NamedEntity'])
+            doc.annotations['NamedEntity'])
         #   Quote
-        self.assertEqual(len(doc.sentences[0].annotations['Quote']), 0)
-        self.assertEqual(len(doc.sentences[1].annotations['Quote']), 1)
-        self.assertEqual(len(doc.sentences[2].annotations['Quote']), 1)
-        self.assertEqual(len(doc.sentences[3].annotations['Quote']), 1)
+        self.assertEqual(len(doc.annotations['Quote']), 3)
         self.assertIn(
             Annotation(2, 1, 2, 19, { '': '' }),
-            doc.sentences[1].annotations['Quote'])
+            doc.annotations['Quote'])
         self.assertIn(
             Annotation(3, 1, 3, 18, { '': '' }),
-            doc.sentences[2].annotations['Quote'])
+            doc.annotations['Quote'])
         self.assertIn(
             Annotation(4, 1, 4, 10, { '': '' }),
-            doc.sentences[3].annotations['Quote'])
+            doc.annotations['Quote'])
 
         self.maxDiff = None
         output = io.StringIO()
