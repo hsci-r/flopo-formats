@@ -253,8 +253,11 @@ class WebAnnoTSVReader:
             self.last_span[layer]['values'] = values
         # span ID same as on the previous token and the values match
         # -> the current token continues the existing span
+        # FIXME this condition is too complicated, rewrite
         elif self.last_span[layer]['id'] == span_id \
-                and self.last_span[layer]['end_tok']+1 == token.tok_id \
+                and (self.last_span[layer]['end_tok']+1 == token.tok_id \
+                     or (self.last_span[layer]['end_sen']+1 == self.sen_id \
+                         and token.tok_id == 1)) \
                 and self.last_span[layer]['values'] == values:
             self.last_span[layer]['end_sen'] = self.sen_id
             self.last_span[layer]['end_tok'] = token.tok_id
@@ -361,8 +364,13 @@ def write_webanno_tsv(document, fp):
             key = layer+'.'+f
             # FIXME it is not necessary to pass sentence and token ID here
             value = _format_value(a[f], f, a.start_sen, a.start_tok, span_id)
-            for i in range(a.start_tok, a.end_tok+1):
-                columns[key][a.start_sen-1][i-1] = value
+            i, j = a.start_sen-1, a.start_tok-1
+            while i <= a.end_sen-1 and (i < a.end_sen-1 or j <= a.end_tok-1):
+                columns[key][i][j] = value
+                j += 1
+                if j >= len(columns[key][i]):
+                    i += 1
+                    j = 0
 
     def _format_token(i, j, t, columns):
         return ['{}-{}'.format(i+1, t.tok_id),
@@ -416,13 +424,14 @@ def load_webanno_tsv(filename):
 
 
 EXCLUDE_CSV_KEYS = { 'articleId', 'paragraphId', 'sentenceId', 'wordId',
-                     'startWordId', 'endWordId' }
+                     'startWordId', 'endWordId', 'startSentenceId',
+                     'endSentenceId' }
 
 
 def read_annotation_from_csv(corpus, fp, layer):
 
     def _parse_line(line, features):
-        s_id = int(line['sentenceId'])
+        start_sen_id, end_sen_id = None, None
         start_w_id, end_w_id = None, None
         if 'startWordId' in line and 'endWordId' in line:
             start_w_id = int(line['startWordId'])
@@ -432,18 +441,30 @@ def read_annotation_from_csv(corpus, fp, layer):
             end_w_id = int(line['wordId'])
         else:
             raise Exception('No word ID')
+        if 'startSentenceId' in line and 'endSentenceId' in line:
+            start_sen_id = int(line['startSentenceId'])
+            end_sen_id = int(line['endSentenceId'])
+        elif 'sentenceId' in line:
+            start_sen_id = int(line['sentenceId'])
+            end_sen_id = int(line['sentenceId'])
+        else:
+            raise Exception('No sentence ID')
         values = { '' : '' } if '' in features \
                  else { key : line[key] for key in line \
                         if key not in EXCLUDE_CSV_KEYS }
-        return s_id, start_w_id, end_w_id, values
+        return start_sen_id, start_w_id, end_sen_id, end_w_id, values
 
-    def _check_boundaries(doc, s_id, start_w_id, end_w_id):
-        if s_id > len(doc.sentences):
+    def _check_boundaries(doc, start_sen_id, start_w_id, end_sen_id, end_w_id):
+        if start_sen_id > len(doc.sentences) \
+                or end_sen_id > len(doc.sentences):
             raise Exception('Sentence ID out of range')
-        if start_w_id < 1 or start_w_id > len(doc.sentences[s_id-1]):
+        if start_w_id < 1 or start_w_id > len(doc.sentences[start_sen_id-1]):
             raise Exception('Span start ID out of range')
-        if end_w_id < 1 or end_w_id > len(doc.sentences[s_id-1]):
+        if end_w_id < 1 or end_w_id > len(doc.sentences[end_sen_id-1]):
             raise Exception('Span end ID out of range')
+        if start_sen_id > end_sen_id \
+                or (start_sen_id == end_sen_id and start_w_id > end_w_id):
+            raise Exception('Span end before start')
     
     # determine the layer features from the CSV header
     reader = csv.DictReader(fp)
@@ -460,16 +481,19 @@ def read_annotation_from_csv(corpus, fp, layer):
         if doc_id not in corpus.documents:
             continue
         try:
-            s_id, start_w_id, end_w_id, values = _parse_line(line, features)
-            _check_boundaries(corpus[doc_id], s_id, start_w_id, end_w_id)
+            start_sen_id, start_w_id, end_sen_id, end_w_id, values = \
+                _parse_line(line, features)
+            _check_boundaries(
+                corpus[doc_id], start_sen_id, start_w_id, end_sen_id, end_w_id)
             corpus[doc_id].annotations[layer].append(
-                Annotation(s_id, start_w_id, s_id, end_w_id, values))
+                Annotation(
+                    start_sen_id, start_w_id, end_sen_id, end_w_id, values))
         except Exception as e:
             logging.warning(
-                '{}: layer={} articleId={} sentenceId={} start_w_id={}'\
-                ' end_w_id={}'\
+                '{}: layer={} articleId={} start_sen_id={} start_w_id={}'\
+                ' end_sen_id={} end_w_id={}'\
                 .format(str(e), layer, line['articleId'],
-                        line['sentenceId'], start_w_id, end_w_id))
+                        start_sen_id, start_w_id, end_sen_id, end_w_id))
 
 
 def load_annotation_from_csv(corpus, filename, annotation_name):

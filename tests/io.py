@@ -509,36 +509,36 @@ class ReadAnnotationTest(unittest.TestCase):
 2-19	189-190	.	.	PUNCT	Punct	punct	*	2-8	_	*[3]	
 
 #Text=– Hallitus tekee torstaina työmarkkinajärjestöille esityksen toimista, joihin kuuluu yksikkötyökustannusten alentaminen vähintään 5 prosentilla ja muutosturva.
-3-1	191-192	–	–	PUNCT	Punct	punct	*	3-3	_	*[4]	
-3-2	193-201	Hallitus	hallitus	NOUN	N	nsubj	*	3-3	_	*[4]	
-3-3	202-207	tekee	tehdä	VERB	V	root	*	3-3	_	*[4]	
-3-4	208-217	torstaina	torstai	NOUN	N	obl	*	3-3	_	*[4]	
-3-5	218-241	työmarkkinajärjestöille	työ#markkina#järjestö	NOUN	N	obl	*	3-3	_	*[4]	
-3-6	242-251	esityksen	esitys	NOUN	N	obj	*	3-3	_	*[4]	
-3-7	252-260	toimista	toimi	NOUN	N	nmod	*	3-6	_	*[4]	
-3-8	260-261	,	,	PUNCT	Punct	punct	*	3-10	_	*[4]	
-3-9	262-268	joihin	joka	PRON	Pron	obl	*	3-10	_	*[4]	
-3-10	269-275	kuuluu	kuulua	VERB	V	acl:relcl	*	3-7	_	*[4]	
-3-11	276-298	yksikkötyökustannusten	yksikkö#työ#kustannus	NOUN	N	nmod:gobj	*	3-12	_	*[4]	
-3-12	299-310	alentaminen	alentaminen	NOUN	N	nsubj	*	3-10	_	*[4]	
-3-13	311-320	vähintään	vähintään	ADV	Adv	advmod	*	3-14	_	*[4]	
-3-14	321-322	5	5	NUM	Num	nummod	*	3-15	_	*[4]	
-3-15	323-334	prosentilla	prosentti	NOUN	N	nmod	*	3-12	_	*[4]	
-3-16	335-337	ja	ja	CCONJ	C	cc	*	3-17	_	*[4]	
-3-17	338-349	muutosturva	muutos#turva	NOUN	N	conj	*	3-12	_	*[4]	
-3-18	349-350	.	.	PUNCT	Punct	punct	*	3-3	_	*[4]	
+3-1	191-192	–	–	PUNCT	Punct	punct	*	3-3	_	*[3]	
+3-2	193-201	Hallitus	hallitus	NOUN	N	nsubj	*	3-3	_	*[3]	
+3-3	202-207	tekee	tehdä	VERB	V	root	*	3-3	_	*[3]	
+3-4	208-217	torstaina	torstai	NOUN	N	obl	*	3-3	_	*[3]	
+3-5	218-241	työmarkkinajärjestöille	työ#markkina#järjestö	NOUN	N	obl	*	3-3	_	*[3]	
+3-6	242-251	esityksen	esitys	NOUN	N	obj	*	3-3	_	*[3]	
+3-7	252-260	toimista	toimi	NOUN	N	nmod	*	3-6	_	*[3]	
+3-8	260-261	,	,	PUNCT	Punct	punct	*	3-10	_	*[3]	
+3-9	262-268	joihin	joka	PRON	Pron	obl	*	3-10	_	*[3]	
+3-10	269-275	kuuluu	kuulua	VERB	V	acl:relcl	*	3-7	_	*[3]	
+3-11	276-298	yksikkötyökustannusten	yksikkö#työ#kustannus	NOUN	N	nmod:gobj	*	3-12	_	*[3]	
+3-12	299-310	alentaminen	alentaminen	NOUN	N	nsubj	*	3-10	_	*[3]	
+3-13	311-320	vähintään	vähintään	ADV	Adv	advmod	*	3-14	_	*[3]	
+3-14	321-322	5	5	NUM	Num	nummod	*	3-15	_	*[3]	
+3-15	323-334	prosentilla	prosentti	NOUN	N	nmod	*	3-12	_	*[3]	
+3-16	335-337	ja	ja	CCONJ	C	cc	*	3-17	_	*[3]	
+3-17	338-349	muutosturva	muutos#turva	NOUN	N	conj	*	3-12	_	*[3]	
+3-18	349-350	.	.	PUNCT	Punct	punct	*	3-3	_	*[3]	
 
 #Text=– Hallitus toivoo työmarkkinajärjestöjen sitoutuvan sopimukseen 21. elokuuta mennessä.
-4-1	351-352	–	–	PUNCT	Punct	punct	*	4-3	_	*[5]	
-4-2	353-361	Hallitus	hallitus	NOUN	N	nsubj	*	4-3	_	*[5]	
-4-3	362-368	toivoo	toivoa	VERB	V	root	*	4-3	_	*[5]	
-4-4	369-391	työmarkkinajärjestöjen	työ#markkina#järjestö	NOUN	N	nsubj	*	4-5	_	*[5]	
-4-5	392-402	sitoutuvan	sitoutua	VERB	V	xcomp:ds	*	4-3	_	*[5]	
-4-6	403-414	sopimukseen	sopimus	NOUN	N	obl	*	4-5	_	*[5]	
-4-7	415-418	21.	21.	ADJ	Num	obl	*	4-5	TimexTmeDat[2]	*[5]	
-4-8	419-427	elokuuta	elokuu	NOUN	N	flat	*	4-7	TimexTmeDat[2]	*[5]	
-4-9	428-436	mennessä	mennessä	ADP	Adp	case	*	4-7	_	*[5]	
-4-10	436-437	.	.	PUNCT	Punct	punct	*	4-3	_	*[5]	
+4-1	351-352	–	–	PUNCT	Punct	punct	*	4-3	_	*[4]	
+4-2	353-361	Hallitus	hallitus	NOUN	N	nsubj	*	4-3	_	*[4]	
+4-3	362-368	toivoo	toivoa	VERB	V	root	*	4-3	_	*[4]	
+4-4	369-391	työmarkkinajärjestöjen	työ#markkina#järjestö	NOUN	N	nsubj	*	4-5	_	*[4]	
+4-5	392-402	sitoutuvan	sitoutua	VERB	V	xcomp:ds	*	4-3	_	*[4]	
+4-6	403-414	sopimukseen	sopimus	NOUN	N	obl	*	4-5	_	*[4]	
+4-7	415-418	21.	21.	ADJ	Num	obl	*	4-5	TimexTmeDat[2]	*[4]	
+4-8	419-427	elokuuta	elokuu	NOUN	N	flat	*	4-7	TimexTmeDat[2]	*[4]	
+4-9	428-436	mennessä	mennessä	ADP	Adp	case	*	4-7	_	*[4]	
+4-10	436-437	.	.	PUNCT	Punct	punct	*	4-3	_	*[4]	
 '''
 
     TEST_ANN = {
@@ -548,19 +548,18 @@ class ReadAnnotationTest(unittest.TestCase):
 99511266,2,2,3,EnamexPrsHum
 99511266,4,7,8,TimexTmeDat''',
         'Quote' : \
-'''articleId,paragraphId,sentenceId,startWordId,endWordId
-99511266,2,2,1,19
-99511266,3,3,1,18
-99511266,5,6,1,21
-99511266,7,9,1,11
-99511266,4,4,1,10
-99511266,4,5,1,6
-99511266,6,7,1,13
-99511266,6,8,1,15
+'''articleId,startSentenceId,startWordId,endSentenceId,endWordId
+99511266,2,1,3,18
+99511266,6,1,6,21
+99511266,9,1,9,11
+99511266,4,1,4,10
+99511266,5,1,5,6
+99511266,7,1,7,13
+99511266,8,1,8,15
 ''',
     }
 
-    def test_read_annotation(self):
+    def test_read_from_csv(self):
         corpus = Corpus()
         corpus['99511266'] = \
             WebAnnoTSVReader().read(io.StringIO(self.TEST_DOC))
@@ -582,12 +581,9 @@ class ReadAnnotationTest(unittest.TestCase):
             Annotation(4, 7, 4, 8, { 'value': 'TimexTmeDat' }),
             doc.annotations['NamedEntity'])
         #   Quote
-        self.assertEqual(len(doc.annotations['Quote']), 3)
+        self.assertEqual(len(doc.annotations['Quote']), 2)
         self.assertIn(
-            Annotation(2, 1, 2, 19, { '': '' }),
-            doc.annotations['Quote'])
-        self.assertIn(
-            Annotation(3, 1, 3, 18, { '': '' }),
+            Annotation(2, 1, 3, 18, { '': '' }),
             doc.annotations['Quote'])
         self.assertIn(
             Annotation(4, 1, 4, 10, { '': '' }),
@@ -597,6 +593,29 @@ class ReadAnnotationTest(unittest.TestCase):
         output = io.StringIO()
         write_webanno_tsv(doc, output)
         self.assertEqual(output.getvalue(), self.TEST_DOC_OUT)
+
+    def test_read_from_webanno(self):
+        doc = WebAnnoTSVReader().read(io.StringIO(self.TEST_DOC_OUT))
+        #   NamedEntity
+        self.assertEqual(len(doc.annotations['NamedEntity']), 3)
+        self.assertIn(
+            Annotation(1, 3, 1, 3, { 'value': 'TimexTmeDat' }),
+            doc.annotations['NamedEntity'])
+        self.assertIn(
+            Annotation(2, 2, 2, 3, { 'value': 'EnamexPrsHum' }),
+            doc.annotations['NamedEntity'])
+        self.assertIn(
+            Annotation(4, 7, 4, 8, { 'value': 'TimexTmeDat' }),
+            doc.annotations['NamedEntity'])
+        #   Quote
+        self.assertEqual(len(doc.annotations['Quote']), 2)
+        self.assertIn(
+            Annotation(2, 1, 3, 18, { '': '' }),
+            doc.annotations['Quote'])
+        self.assertIn(
+            Annotation(4, 1, 4, 10, { '': '' }),
+            doc.annotations['Quote'])
+
 
 class PrologTest(unittest.TestCase):
     TEST_DOC = \
