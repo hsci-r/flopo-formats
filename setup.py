@@ -17,7 +17,6 @@ setup(
     install_requires=[],
     entry_points={
         'console_scripts' : [
-            'flopo-annotate  = flopo_utils.scripts.annotate:main',
             'flopo-convert   = flopo_utils.scripts.convert:main',
             'flopo-finer     = flopo_utils.scripts.finer:main',
             'flopo-export    = flopo_utils.scripts.export:main',

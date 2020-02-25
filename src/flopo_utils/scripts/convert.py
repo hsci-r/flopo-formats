@@ -1,4 +1,5 @@
 import argparse
+import os
 import os.path
 
 from flopo_utils.data import Corpus
@@ -25,7 +26,12 @@ def load_corpus(args):
     if args.input_format == 'csv':
         return flopo_utils.io.load_conll(args.input_file)
     elif args.input_format == 'webanno-tsv':
-        raise NotImplementedError()
+        corpus = Corpus()
+        for filename in os.listdir(args.input_dir):
+            doc_id = filename.replace('.tsv', '')
+            path = os.path.join(args.input_dir, filename)
+            corpus[doc_id] = flopo_utils.io.load_webanno_tsv(path)
+        return corpus
     else:
         raise RuntimeError(\
             'Unknown input format: {.input_format}'.format(args))
@@ -46,6 +52,14 @@ def save_corpus(corpus, args):
                 args.output_format)
 
 
+def parse_annotation_source(source):
+    if ':' in source:
+        return tuple(source.split(':')[:2])
+    else:
+        raise RuntimeError(
+            'Could not parse annotation source: {}'.format(source))
+
+
 def parse_arguments():
     parser = argparse.ArgumentParser(
         description='Convert between different file formats used in FLOPO.')
@@ -63,6 +77,12 @@ def parse_arguments():
              ' are treated as a corpus and processed')
     parser.add_argument('-O', '--output-dir', metavar='DIR',
         help='output directory (see above)')
+    parser.add_argument(
+        '-a', '--annotations', nargs='+',
+        help='A list of annotations to include, each having the format:'\
+             ' LAYER:FILE, where LAYER is the name of the layer'\
+             ' (for example \'Hedging\') and FILE is a CSV file.'\
+             ' Terminate the list with "--".')
     return parser.parse_args()
 
 
@@ -79,6 +99,9 @@ def main():
                 'Requested conversion of a whole corpus, but no'\
                 ' output directory supplied.')
         corpus = load_corpus(args)
+        for a in args.annotations:
+            layer, filename = parse_annotation_source(a)
+            flopo_utils.io.load_annotation_from_csv(corpus, filename, layer)
         save_corpus(corpus, args)
     elif args.input_file is not None:       # convert a single document
         if args.output_file is None:

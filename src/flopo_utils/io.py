@@ -527,6 +527,14 @@ def write_prolog(document, fp):
                         results.append(('feats', s_id, t_id,
                                         '{}({})'.format(key, val)))
         results.append(('eos', s_id, len(s.tokens), None))
+    if 'QuotedSpan' in document.annotations \
+            and document.annotations['QuotedSpan']:
+        for a in document.annotations['QuotedSpan']:
+            results.append(\
+                ('quoted_span', a.start_sen, a.start_tok,
+                 '{}-{}'.format(a.end_sen, a.end_tok)))
+    else:
+        fp.write('quoted_span(_, _) :- fail.\n')
     results.sort()
     for predicate, s_id, t_id, arg in results:
         if arg is not None:

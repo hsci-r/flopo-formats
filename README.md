@@ -20,17 +20,15 @@ The package provides commands for manipulating FLOPO data. The usual pipeline
 consists of calls like this:
 ```
 mkdir -p data/work/webanno
-mkdir -p data/work/webanno-annotated
-flopo-convert -f csv -t webanno-tsv -i data/final/kiky.conll.csv -O data/work/webanno/
-flopo-annotate -a \
-	NamedEntity:data/final/kiky.ner.csv \
-	Quote:data/final/kiky.quotes.csv \
-	IQuote:data/final/kiky.iquotes.csv \
-	Metaphor:data/final/kiky.metaphors.csv \
-	Hedging:data/final/kiky.hedging.csv \
-	-I data/work/webanno/ -O data/work/webanno-annotated/
+flopo-convert \
+	-f csv -t webanno-tsv \
+	-i data/final/kiky.conll.csv -O data/work/webanno/
+	-a NamedEntity:data/final/kiky.ner.csv \
+	   Quote:data/final/kiky.quotes.csv \
+	   Metaphor:data/final/kiky.metaphors.csv \
+	   Hedging:data/final/kiky.hedging.csv
 flopo-package \
-	-I data/work/webanno-annotated/ \
+	-I data/work/webanno/ \
 	-t data/raw/webanno-project-template.json \
 	-o data/final/kiky.zip \
 	-n 'Case KIKY'
@@ -38,36 +36,6 @@ flopo-package \
 
 The commands are described below. Furthermore, each command has a `--help`
 option, which will print detailed usage information.
-
-## `flopo-annotate`
-
-This tool is used to merge the annotations from CSV files into an existing
-corpus of WebAnno-TSV files.
-
-### Arguments
-
-- `-a`, `--annotations` -- a list of annotations to include, each having the
-  format: `LAYER:FILE`, where `LAYER` is the name of the layer (for example
-  'Hedging') and `FILE` is a CSV file.
-- `-I`, `--input-dir` -- The directory containing the corpus (as WebAnno TSV
-  files).
-- `-O`, `--output-dir` -- The directory into which the annotated TSV files will
-  be saved.
-
-### Examples
-
-```
-flopo-annotate -a \
-	NamedEntity:kiky.ner.csv \
-	Quote:kiky.quotes.csv \
-	Metaphor:kiky.metaphors.csv \
-	Hedging:kiky.hedging.csv \
-	-I webanno/ -O webanno-annotated/
-```
-
-Add the annotations of named entities, quotes, metaphors and hedging to all TSV
-files in the folder `webanno`. Save the results in the folder
-`webanno-annotated`.
 
 ## `flopo-convert`
 
@@ -81,7 +49,10 @@ Convert between different file formats used in FLOPO.
 - `-i`, `--input-file`,
 - `-I`, `--input-dir` -- currently not used,
 - `-o`, `--output-file`,
-- `-O`, `--output-dir` -- use for conversion from CSV to WebAnno.
+- `-O`, `--output-dir` -- use for conversion from CSV to WebAnno,
+- `-a`, `--annotations` -- a list of annotations to add, each having the
+  format: `LAYER:FILE`, where `LAYER` is the name of the layer (for example
+  'Hedging') and `FILE` is a CSV file.
 
 ### Examples
 
