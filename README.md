@@ -152,7 +152,24 @@ The same using remote FINER.
 
 ## `flopo-eval`
 
-TODO
+Compare annotations to a gold standard.
+
+### Arguments
+
+- `-i`, `--input-file` -- CSV file containing the annotations to evaluate,
+- `-g`, `--gs-file` -- CSV file containing the gold standard annotation,
+- `-c`, `--corpus-file` -- corpus file (CoNLL format),
+- `-r`, `--results-format` -- results format: `short` - print only evaluation
+  measures, `long` - print results for each sentence, `csv` - output a CSV
+  suitable for more detailed evaluation.
+
+### Examples
+
+```
+flopo-eval \
+	-c kiky.conll.csv  -i kiky.conll.quotes.csv \
+	-g quotes.aharju.csv -r csv
+```
 
 ## `flopo-package`
 
