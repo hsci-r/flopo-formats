@@ -185,7 +185,8 @@ def main():
     corpus = None
     corpus = load_corpus(args.corpus_file, only_doc_ids=doc_ids)
     tp, fp, fn = 0, 0, 0
-    writer = csv.writer(sys.stdout) if args.results_format == 'csv' else None
+    writer = csv.writer(sys.stdout, lineterminator='\n') \
+             if args.results_format == 'csv' else None
     first = True
     for doc_id in doc_ids:
         doc_src_anns = unfold_annotations(corpus[doc_id], input_anns[doc_id])

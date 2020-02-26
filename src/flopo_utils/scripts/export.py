@@ -59,7 +59,7 @@ def main():
     outfp = sys.stdout
     if args.output_file is not None and args.output_file != '-':
         outfp = open(args.output_file, 'w+')
-    writer = csv.writer(outfp, delimiter=args.delimiter)
+    writer = csv.writer(outfp, delimiter=args.delimiter, lineterminator='\n')
     if args.input_file is not None:
         doc = flopo_utils.io.load_webanno_tsv(args.input_file)
         doc_id = args.doc_id

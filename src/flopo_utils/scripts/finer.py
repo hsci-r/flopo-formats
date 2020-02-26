@@ -8,7 +8,7 @@ import flopo_utils.wrappers.finer
 
 def write_annotations(annotations, output_file):
     with open(output_file, 'w+') as fp:
-        writer = csv.writer(fp)
+        writer = csv.writer(fp, lineterminator='\n')
         writer.writerow(
             ('articleId', 'sentenceId', 'startWordId', 'endWordId', 'value'))
         for doc_id, doc_anns in annotations:
