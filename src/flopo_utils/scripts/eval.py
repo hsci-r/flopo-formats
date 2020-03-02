@@ -188,7 +188,7 @@ def main():
     writer = csv.writer(sys.stdout, lineterminator='\n') \
              if args.results_format == 'csv' else None
     first = True
-    for doc_id in doc_ids:
+    for doc_id in sorted(doc_ids):
         doc_src_anns = unfold_annotations(corpus[doc_id], input_anns[doc_id])
         doc_tgt_anns = unfold_annotations(corpus[doc_id], gs_anns[doc_id])
         results = compare_annotations(doc_src_anns, doc_tgt_anns)
