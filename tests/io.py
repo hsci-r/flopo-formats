@@ -648,7 +648,8 @@ class PrologTest(unittest.TestCase):
 100023169,2,3,11,.,.,PUNCT,Punct,,5,punct,SpacesAfter=\\n\\n'''
 
     TEST_DOC_OUT = \
-'''deprel(1-1, amod).
+'''quoted_span(_, _) :- fail.
+deprel(1-1, amod).
 deprel(1-2, nsubj).
 deprel(1-3, root).
 deprel(1-4, obl).
