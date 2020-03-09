@@ -506,41 +506,57 @@ def _prolog_escape(string):
 
 
 def write_prolog(document, fp):
+
+    def _arg_to_str(arg):
+        if isinstance(arg, tuple):
+            return '-'.join(map(str, arg))
+        elif isinstance(arg, int):
+            return str(arg)
+        elif isinstance(arg, str):
+            return arg
+
+    def _quote(arg):
+        return '"{}"'.format(arg)
+
     results = []
     for s_id, s in enumerate(document.sentences, 1):
         for t_id, t in enumerate(s.tokens, 1):
-            results.append(
-                ('token', s_id, t_id,
-                 '"{}"'.format(_prolog_escape(t.string))))
-            lemma = _prolog_escape(t['Lemma']['value'])
-            results.append(('lemma', s_id, t_id, '"{}"'.format(lemma)))
-            pos = t['POS']
-            results.append(('upos', s_id, t_id, pos['coarseValue'].lower()))
-            results.append(('xpos', s_id, t_id, pos['PosValue'].lower()))
-            dep = t['Dependency']
-            head = '{}-{}'.format(s_id, dep['head'])
-            results.append(('head', s_id, t_id, head))
-            results.append(('deprel', s_id, t_id, dep['DependencyType']))
+            tok = (s_id, t_id)
+            results.append(('token', tok, _quote(_prolog_escape(t.string))))
+            lemma = t['Lemma']['value']
+            results.append(('lemma', tok, _quote(_prolog_escape(lemma))))
+            results.append(('upos', tok, t['POS']['coarseValue'].lower()))
+            d = t['Dependency']
+            results.append(('head', tok, (s_id, d['head'])))
+            results.append(('deprel', tok, d['DependencyType']))
             if 'MorphologicalFeatures' in t.annotations:
                 for key, val in t['MorphologicalFeatures'].items():
                     if val:
-                        results.append(('feats', s_id, t_id,
+                        results.append(('feats', tok,
                                         '{}({})'.format(key, val)))
-        results.append(('eos', s_id, len(s.tokens), None))
+        results.append(('eos', (s_id, len(s.tokens))))
     if 'QuotedSpan' in document.annotations \
             and document.annotations['QuotedSpan']:
         for a in document.annotations['QuotedSpan']:
             results.append(\
-                ('quoted_span', a.start_sen, a.start_tok,
-                 '{}-{}'.format(a.end_sen, a.end_tok)))
+                ('quoted_span',
+                 (a.start_sen, a.start_tok),
+                 (a.end_sen, a.end_tok)))
     else:
         fp.write('quoted_span(_, _) :- fail.\n')
+    if 'NamedEntity' in document.annotations \
+            and document.annotations['NamedEntity']:
+        for a in document.annotations['NamedEntity']:
+            results.append(\
+                ('named_entity',
+                 (a.start_sen, a.start_tok),
+                 (a.end_sen, a.end_tok),
+                 a['value'].lower()))
+    else:
+        fp.write('named_entity(_, _, _) :- fail.\n')
     results.sort()
-    for predicate, s_id, t_id, arg in results:
-        if arg is not None:
-            fp.write('{}({}-{}, {}).\n'.format(predicate, s_id, t_id, arg))
-        else:
-            fp.write('{}({}-{}).\n'.format(predicate, s_id, t_id))
+    for r in results:
+        fp.write('{}({}).\n'.format(r[0], ', '.join(map(_arg_to_str, r[1:]))))
 
 
 def save_prolog(document, filename):

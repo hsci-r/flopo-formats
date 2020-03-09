@@ -649,6 +649,7 @@ class PrologTest(unittest.TestCase):
 
     TEST_DOC_OUT = \
 '''quoted_span(_, _) :- fail.
+named_entity(_, _, _) :- fail.
 deprel(1-1, amod).
 deprel(1-2, nsubj).
 deprel(1-3, root).
@@ -836,32 +837,6 @@ upos(3-8, noun).
 upos(3-9, noun).
 upos(3-10, adp).
 upos(3-11, punct).
-xpos(1-1, a).
-xpos(1-2, n).
-xpos(1-3, v).
-xpos(1-4, n).
-xpos(1-5, adp).
-xpos(2-1, punct).
-xpos(2-2, n).
-xpos(2-3, c).
-xpos(2-4, n).
-xpos(2-5, punct).
-xpos(2-6, n).
-xpos(2-7, n).
-xpos(2-8, v).
-xpos(2-9, adv).
-xpos(2-10, v).
-xpos(3-1, a).
-xpos(3-2, a).
-xpos(3-3, n).
-xpos(3-4, n).
-xpos(3-5, v).
-xpos(3-6, n).
-xpos(3-7, adp).
-xpos(3-8, n).
-xpos(3-9, n).
-xpos(3-10, adp).
-xpos(3-11, punct).
 '''
 
     def test_write_prolog(self):
