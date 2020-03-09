@@ -78,7 +78,7 @@ def parse_arguments():
     parser.add_argument('-O', '--output-dir', metavar='DIR',
         help='output directory (see above)')
     parser.add_argument(
-        '-a', '--annotations', nargs='+',
+        '-a', '--annotations', nargs='+', default=[],
         help='A list of annotations to include, each having the format:'\
              ' LAYER:FILE, where LAYER is the name of the layer'\
              ' (for example \'Hedging\') and FILE is a CSV file.'\
