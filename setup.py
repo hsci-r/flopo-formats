@@ -4,11 +4,11 @@ with open('README.md') as fp:
     README = fp.read()
 
 setup(
-    name='flopo_utils',
+    name='flopo-formats',
     version='0.1.0',
     author='Maciej Janicki',
     author_email='maciej.janicki@helsinki.fi',
-    description='Various utilities to be used in the FLOPO project',
+    description='Tools for converting between data formats used in the FloPo project.',
     long_description=README,
     long_description_content_type='text/markdown',
     packages=find_packages('src', exclude=['tests', 'tests.*']),
