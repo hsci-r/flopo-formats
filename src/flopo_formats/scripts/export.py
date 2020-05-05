@@ -4,8 +4,8 @@ import os
 import os.path
 import sys
 
-from flopo_utils.data import Corpus
-import flopo_utils.io
+from flopo_formats.data import Corpus
+import flopo_formats.io
 
 
 def export_document(doc, writer, doc_id, layer, header=False):
@@ -61,7 +61,7 @@ def main():
         outfp = open(args.output_file, 'w+')
     writer = csv.writer(outfp, delimiter=args.delimiter, lineterminator='\n')
     if args.input_file is not None:
-        doc = flopo_utils.io.load_webanno_tsv(args.input_file)
+        doc = flopo_formats.io.load_webanno_tsv(args.input_file)
         doc_id = args.doc_id
         if doc_id is None:
             doc_id = os.path.basename(args.input_file).replace('.tsv', '')
@@ -71,7 +71,7 @@ def main():
         for dirpath, dirnames, filenames in os.walk(args.input_dir):
             for f in filenames:
                 doc_id = f.replace('.tsv', '')
-                doc = flopo_utils.io.load_webanno_tsv(os.path.join(dirpath, f))
+                doc = flopo_formats.io.load_webanno_tsv(os.path.join(dirpath, f))
                 export_document(doc, writer, doc_id, args.annotation,
                                 header=first)
                 first = False

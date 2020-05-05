@@ -1,8 +1,8 @@
 import io
 import unittest
 
-from flopo_utils.data import Corpus, Annotation
-from flopo_utils.io import \
+from flopo_formats.data import Corpus, Annotation
+from flopo_formats.io import \
     CoNLLCorpusReader, WebAnnoTSVReader, write_webanno_tsv, \
     _webanno_escape, _webanno_unescape, read_annotation_from_csv, \
     write_prolog

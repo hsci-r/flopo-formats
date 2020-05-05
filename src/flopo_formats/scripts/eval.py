@@ -4,7 +4,7 @@ import csv
 from operator import itemgetter
 import sys
 
-from flopo_utils.data import Annotation
+from flopo_formats.data import Annotation
 
 # TODO
 # - cleaner code

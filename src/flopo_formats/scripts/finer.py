@@ -2,8 +2,8 @@ import argparse
 import csv
 import logging
 
-from flopo_utils.io import load_conll
-import flopo_utils.wrappers.finer
+from flopo_formats.io import load_conll
+import flopo_formats.wrappers.finer
 
 
 def write_annotations(annotations, output_file):
@@ -47,7 +47,7 @@ def main():
         sentences = [[t.string for t in s.tokens] for s in doc.sentences]
         annotations.append((
             doc_id,
-            flopo_utils.wrappers.finer.annotate(sentences, args.remote)))
+            flopo_formats.wrappers.finer.annotate(sentences, args.remote)))
         logging.info('Processing document: {} ({}/{})'\
                      .format(doc_id, i, len(corpus)))
     write_annotations(annotations, args.output_file)
