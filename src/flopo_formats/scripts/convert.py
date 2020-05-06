@@ -1,8 +1,10 @@
 import argparse
+import logging
 import os
 import os.path
 
 from flopo_formats.data import Corpus
+import flopo_formats.io.conll
 import flopo_formats.io.csv
 import flopo_formats.io.webannotsv
 import flopo_formats.io.prolog
@@ -27,6 +29,8 @@ def save_document(document, filename, _format):
 def load_corpus(args):
     if args.input_format == 'csv':
         return flopo_formats.io.csv.load_csv(args.input_file)
+    elif args.input_format == 'conll':
+        return flopo_formats.io.conll.load_conll(args.input_file)
     elif args.input_format == 'webanno-tsv':
         corpus = Corpus()
         for filename in os.listdir(args.input_dir):
@@ -41,17 +45,20 @@ def load_corpus(args):
 
 def save_corpus(corpus, args):
     if args.output_format == 'csv':
-        # TODO save whole corpus as CSV
-        raise NotImplementedError()
+        # save whole corpus as CSV
+        flopo_formats.io.csv.save_csv(corpus, args.output_file)
     else:
         # one-document-per-file formats
         for doc_id in corpus:
-            filename = doc_id + \
-                      ('.pl' if args.output_format == 'prolog' else '')
-            save_document(
-                corpus[doc_id],
-                os.path.join(args.output_dir, filename),
-                args.output_format)
+            try:
+                filename = doc_id + \
+                          ('.pl' if args.output_format == 'prolog' else '')
+                save_document(
+                    corpus[doc_id],
+                    os.path.join(args.output_dir, filename),
+                    args.output_format)
+            except Exception:
+                logging.warning('Ignoring document: %s', str(doc_id))
 
 
 def parse_annotation_source(source):
@@ -66,7 +73,7 @@ def parse_arguments():
     parser = argparse.ArgumentParser(
         description='Convert between different file formats used in FLOPO.')
     parser.add_argument('-f', '--from', dest='input_format',
-        choices=['csv', 'webanno-tsv'],
+        choices=['conll', 'csv', 'webanno-tsv'],
         help='input file format')
     parser.add_argument('-t', '--to', dest='output_format',
         choices=['csv', 'webanno-tsv', 'prolog'],
@@ -90,13 +97,15 @@ def parse_arguments():
 
 def main():
     args = parse_arguments()
+    # FIXME simplify and correct these parameter checks
     if args.input_format is None:
         raise RuntimeError('No input format supplied (use -f option).')
     if args.output_format is None:
         raise RuntimeError('No output format supplied (use -t option).')
     if (args.input_format == 'csv' and args.input_file is not None) \
+        or (args.input_format == 'conll' and args.input_file is not None) \
             or args.input_dir is not None:  # convert corpus
-        if args.output_dir is None:
+        if args.output_dir is None and args.output_format != 'csv':
             raise RuntimeError(
                 'Requested conversion of a whole corpus, but no'\
                 ' output directory supplied.')

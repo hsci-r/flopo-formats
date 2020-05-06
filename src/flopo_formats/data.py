@@ -1,17 +1,23 @@
 class Token:
-    def __init__(self, tok_id, start_idx, end_idx, string, space_after=' '):
+    def __init__(self, tok_id, start_idx, end_idx, string, feats = '',
+                 misc = '', space_after=' '):
         self.tok_id = int(tok_id)
         self.start_idx = int(start_idx)
         self.end_idx = int(end_idx)
         self.string = string
         self.space_after = space_after
+        self.feats = feats
+        self.misc = misc
         self.annotations = {}
 
     def __getitem__(self, key):
         return self.annotations[key]
 
+
 class Sentence:
-    def __init__(self, tokens):
+    def __init__(self, tokens, sen_id = None, par_id = None):
+        self.sen_id = sen_id
+        self.par_id = par_id
         self.tokens = tokens
 
     def __len__(self):

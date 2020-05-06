@@ -43,7 +43,7 @@ Convert between different file formats used in FLOPO.
 
 ### Arguments
 
-- `-f`, `--from` -- input format (currently `csv` or `webanno-tsv`),
+- `-f`, `--from` -- input format (currently `conll`, `csv` or `webanno-tsv`),
 - `-t`, `--to` -- output format (currently `webanno-tsv` or `prolog`), use
   `flopo-export` to convert WebAnno files back to CSV,
 - `-i`, `--input-file`,

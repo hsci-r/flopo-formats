@@ -79,10 +79,13 @@ class CSVCorpusReader:
             self.idx,
             self.idx+len(line['word']),
             line['word'],
+            misc=line['misc'],
             space_after=space_after)
         t.annotations['Lemma'] = { 'value' : line['lemma'] }
         t.annotations['POS'] = \
             { 'coarseValue' : line['upos'], 'PosValue' : line['xpos'] }
+        # FIXME when do we really need to parse the features?
+        t.annotations['feats'] = line['feats']
         feats = self._parse_feats(line['feats'])
         if feats is not None:
             t.annotations['MorphologicalFeatures'] = feats
@@ -108,6 +111,29 @@ class CSVCorpusReader:
 def load_csv(filename):
     with open(filename) as fp:
         return CSVCorpusReader().read(fp)
+
+
+def write_csv(corpus, fp):
+    writer = csv.writer(fp, delimiter=',', lineterminator='\n')
+    writer.writerow(
+        ('articleId', 'paragraphId', 'sentenceId', 'wordId', 'word',
+         'lemma', 'upos', 'xpos', 'feats', 'head', 'deprel', 'misc'))
+    for doc_id in sorted(corpus):
+        for s in corpus[doc_id].sentences:
+            for t in s.tokens:
+                row = (doc_id, s.par_id, s.sen_id, t.tok_id, t.string,
+                       t['Lemma']['value'], t['POS']['coarseValue'],
+                       t['POS']['PosValue'],
+                       t['feats'] if t['feats'] != '_' else '',
+                       t['Dependency']['head'],
+                       t['Dependency']['DependencyType'],
+                       t.misc if t.misc != '_' else '')
+                writer.writerow(row)
+
+
+def save_csv(corpus, filename):
+    with open(filename, 'w+') as fp:
+        write_csv(corpus, fp)
 
 
 EXCLUDE_CSV_KEYS = { 'articleId', 'paragraphId', 'sentenceId', 'wordId',
