@@ -15,9 +15,9 @@ class CoNLLCorpusReader(CSVCorpusReader):
         ('wordId', 'word', 'lemma', 'upos', 'xpos',
          'feats', 'head', 'deprel', 'deps', 'misc')
 
-    def __init__(self):
+    def __init__(self, filename = None):
         self.doc_id = None
-        self.next_doc_id = None
+        self.next_doc_id = filename.replace('.txt', '') if filename else None
         self.sen_id = None
         self.sen_id_shift = 0
         self.par_id = 0
@@ -32,9 +32,9 @@ class CoNLLCorpusReader(CSVCorpusReader):
             self.sentences.append(s)
             self.tokens = []
 
-    def _finalize_document(self):
+    def _finalize_document(self, force=False):
         self._finalize_sentence()
-        if self.next_doc_id is not None:
+        if self.next_doc_id is not None or force:
             if self.sentences:
                 doc = Document(CSVCorpusReader.SCHEMA, self.sentences)
                 self.corpus.documents[self.doc_id] = doc
@@ -81,6 +81,7 @@ class CoNLLCorpusReader(CSVCorpusReader):
                 self._read_token(line)
             else:
                 logging.warning('Ignoring malformed line: {}'.format(line))
+        self._finalize_document(force=True)
         return self.corpus
 
 
@@ -98,7 +99,7 @@ def load_conll(filename, recursive=False):
 
     if os.path.isfile(filename):
         with open(filename) as fp:
-            return CoNLLCorpusReader().read(fp)
+            return CoNLLCorpusReader(filename).read(fp)
     elif os.path.isdir(filename):
         reader = CoNLLCorpusReader()
         for f in _get_files_in_dir(filename, recursive=recursive):
