@@ -5,7 +5,7 @@ import re
 from flopo_formats.data import Corpus, Document, Sentence, Token, Annotation
 
 
-class CoNLLCorpusReader:
+class CSVCorpusReader:
     PATTERN_SPACES_AFTER = re.compile('SpacesAfter=([^|]*)')
     SCHEMA = [('Lemma', ('value',)),
               ('POS', ('coarseValue', 'PosValue')),
@@ -34,14 +34,14 @@ class CoNLLCorpusReader:
     def _finalize_document(self, line):
         self._finalize_sentence(line)
         if self.sentences:
-            doc = Document(CoNLLCorpusReader.SCHEMA, self.sentences)
+            doc = Document(CSVCorpusReader.SCHEMA, self.sentences)
             self.corpus.documents[self.doc_id] = doc
         self.sentences = []
         self.doc_id = line['articleId'] if line is not None else None
         self.idx = 0
 
     def _determine_space_after(self, line):
-        m = CoNLLCorpusReader.PATTERN_SPACES_AFTER.match(line['misc'])
+        m = CSVCorpusReader.PATTERN_SPACES_AFTER.match(line['misc'])
         if m is not None:
             return m.group(1).replace('\\n', '\n')
         elif 'SpaceAfter=No' in line['misc']:
@@ -55,14 +55,14 @@ class CoNLLCorpusReader:
                    else string
         if '=' not in feats:
             return None
-        result = { key: '' for key in CoNLLCorpusReader.SCHEMA[2][1] }
+        result = { key: '' for key in CSVCorpusReader.SCHEMA[2][1] }
         if feats != '_':
             for feat in feats.split('|'):
                 key, val = feat.split('=')
                 key = _uncapitalize(key)
                 if key in result:
                     result[key] = val.lower()
-                # some special rules to cover differences between CoNLL and
+                # some special rules to cover differences between CSV and
                 # WebAnno-TSV formats
                 elif key == 'polarity' and val == 'Neg':
                     result['negative'] = 'true'
@@ -105,9 +105,9 @@ class CoNLLCorpusReader:
         return self.corpus
 
 
-def load_conll(filename):
+def load_csv(filename):
     with open(filename) as fp:
-        return CoNLLCorpusReader().read(fp)
+        return CSVCorpusReader().read(fp)
 
 
 EXCLUDE_CSV_KEYS = { 'articleId', 'paragraphId', 'sentenceId', 'wordId',

@@ -2,11 +2,11 @@ import io
 import unittest
 
 from flopo_formats.data import Corpus, Annotation
-from flopo_formats.io.csv import CoNLLCorpusReader, read_annotation_from_csv
+from flopo_formats.io.csv import CSVCorpusReader, read_annotation_from_csv
 from flopo_formats.io.webannotsv import WebAnnoTSVReader, write_webanno_tsv
 
 
-class CoNLLCorpusReaderTest(unittest.TestCase):
+class CSVCorpusReaderTest(unittest.TestCase):
 
     TEST_DOC = \
 '''articleId,paragraphId,sentenceId,wordId,word,lemma,upos,xpos,feats,head,deprel,misc
@@ -105,7 +105,7 @@ class CoNLLCorpusReaderTest(unittest.TestCase):
 100189803,3,3,13,.,.,PUNCT,Punct,,3,punct,SpacesAfter=\\n\\n'''
 
     def test_read(self):
-        corpus = CoNLLCorpusReader().read(io.StringIO(self.TEST_DOC))
+        corpus = CSVCorpusReader().read(io.StringIO(self.TEST_DOC))
         # test the number of documents and their IDs
         self.assertEqual(len(corpus), 3)
         self.assertIn('100023169', corpus)

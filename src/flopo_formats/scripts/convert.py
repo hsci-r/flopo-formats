@@ -26,7 +26,7 @@ def save_document(document, filename, _format):
 
 def load_corpus(args):
     if args.input_format == 'csv':
-        return flopo_formats.io.csv.load_conll(args.input_file)
+        return flopo_formats.io.csv.load_csv(args.input_file)
     elif args.input_format == 'webanno-tsv':
         corpus = Corpus()
         for filename in os.listdir(args.input_dir):

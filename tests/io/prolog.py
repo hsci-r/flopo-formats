@@ -1,7 +1,7 @@
 import io
 import unittest
 
-from flopo_formats.io.csv import CoNLLCorpusReader
+from flopo_formats.io.csv import CSVCorpusReader
 from flopo_formats.io.prolog import write_prolog
 
 
@@ -228,7 +228,7 @@ upos(3-11, punct).
 '''
 
     def test_write_prolog(self):
-        corpus = CoNLLCorpusReader().read(io.StringIO(self.TEST_DOC))
+        corpus = CSVCorpusReader().read(io.StringIO(self.TEST_DOC))
         output = io.StringIO()
         write_prolog(corpus['100023169'], output)
         self.maxDiff = None
