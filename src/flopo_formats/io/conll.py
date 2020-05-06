@@ -88,7 +88,8 @@ def load_conll(filename, recursive=False):
 
     def _get_files_in_dir(dirname, recursive=False):
         if not recursive:
-            return [f for f in os.listdir(dirname) if os.path.isfile(f)]
+            return [f for f in os.listdir(dirname) \
+                      if os.path.isfile(os.path.join(dirname, f))]
         else:
             results = []
             for subdirname, dirs, files in os.walk(dirname):
@@ -101,7 +102,7 @@ def load_conll(filename, recursive=False):
     elif os.path.isdir(filename):
         reader = CoNLLCorpusReader()
         for f in _get_files_in_dir(filename, recursive=recursive):
-            with open(os.path.join(dirname, f)) as fp:
+            with open(os.path.join(filename, f)) as fp:
                 reader.read(fp)
         return reader.corpus
 

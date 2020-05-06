@@ -30,7 +30,9 @@ def load_corpus(args):
     if args.input_format == 'csv':
         return flopo_formats.io.csv.load_csv(args.input_file)
     elif args.input_format == 'conll':
-        return flopo_formats.io.conll.load_conll(args.input_file)
+        filename = args.input_file if args.input_file is not None \
+                   else args.input_dir
+        return flopo_formats.io.conll.load_conll(filename)
     elif args.input_format == 'webanno-tsv':
         corpus = Corpus()
         for filename in os.listdir(args.input_dir):
