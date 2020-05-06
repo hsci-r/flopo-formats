@@ -88,14 +88,16 @@ class CoNLLCorpusReader(CSVCorpusReader):
 def load_conll(filename, recursive=False):
 
     def _get_files_in_dir(dirname, recursive=False):
+        results = []
         if not recursive:
-            return [f for f in os.listdir(dirname) \
-                      if os.path.isfile(os.path.join(dirname, f))]
+            for f in os.listdir(dirname):
+                path = os.path.join(dirname, f)
+                if os.path.isfile(path):
+                    results.append(path)
         else:
-            results = []
             for subdirname, dirs, files in os.walk(dirname):
                 results.extend([os.path.join(subdirname, f) for f in files])
-            return results
+        return results
 
     if os.path.isfile(filename):
         with open(filename) as fp:
@@ -103,7 +105,8 @@ def load_conll(filename, recursive=False):
     elif os.path.isdir(filename):
         reader = CoNLLCorpusReader()
         for f in _get_files_in_dir(filename, recursive=recursive):
-            with open(os.path.join(filename, f)) as fp:
+            reader.next_doc_id = os.path.basename(f)
+            with open(f) as fp:
                 reader.read(fp)
         return reader.corpus
 

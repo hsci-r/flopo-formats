@@ -26,11 +26,12 @@ def save_document(document, filename, _format):
         raise RuntimeError('Unknown format: {}'.format(_format))
 
 
-def load_corpus(input_loc, _format):
+def load_corpus(input_loc, _format, recursive=False):
     if _format == 'csv':
         return flopo_formats.io.csv.load_csv(input_loc)
     elif _format == 'conll':
-        return flopo_formats.io.conll.load_conll(input_loc)
+        return flopo_formats.io.conll.load_conll(
+            input_loc, recursive=recursive)
     elif _format == 'webanno-tsv':
         corpus = Corpus()
         for filename in os.listdir(input_loc):
@@ -89,6 +90,8 @@ def parse_arguments():
              ' are treated as a corpus and processed')
     parser.add_argument('-O', '--output-dir', metavar='DIR',
         help='output directory (see above)')
+    parser.add_argument('-r', '--recursive', default=False, action='store_true',
+        help='in combination with -I, search also subdirectories')
     parser.add_argument(
         '-a', '--annotations', nargs='+', default=[],
         help='A list of annotations to include, each having the format:'\
@@ -161,12 +164,16 @@ def check_arguments(args):
         raise RuntimeError(
             'Processing level mismatch: input is a {}, output is a {}.'\
             .format(pl_input, pl_output))
-    # one last thing... adding annotations is currently
-    # not supported for single documents
+    # adding annotations is currently not supported for single documents
     if pl_input == 'document' and args.annotations:
         logging.warning(
             'Adding annotations to single documents is currently'
             ' not supported. The -a parameter will be ignored.')
+    # the --recursive flag is only supported for the CoNLL input format
+    if args.recursive and args.input_format != 'conll':
+        logging.warning(
+            'Ignoring the --recursive parameter (only supported'
+            ' for CoNLL input format).')
     return input_loc, output_loc, pl_input
 
 
@@ -177,7 +184,8 @@ def main():
         document = load_document(input_loc, args.input_format)
         save_document(document, output_loc, args.output_format)
     elif processing_level == 'corpus':
-        corpus = load_corpus(input_loc, args.input_format)
+        corpus = load_corpus(
+            input_loc, args.input_format, recursive=args.recursive)
         for a in args.annotations:
             layer, filename = parse_annotation_source(a)
             flopo_formats.io.csv.load_annotation_from_csv(
