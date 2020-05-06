@@ -151,7 +151,7 @@ def check_arguments(args):
             pl_output = 'document'
     elif args.output_dir is not None:
         if args.output_format in ('webanno-tsv', 'prolog'):
-            pl_output = 'document'
+            pl_output = 'corpus'
         else:
             raise RuntimeError(
                 'Writing to a directory is not supported for'
