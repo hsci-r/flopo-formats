@@ -114,20 +114,24 @@ def load_csv(filename):
 
 
 def write_csv(corpus, fp):
-    writer = csv.writer(fp, delimiter=',', lineterminator='\n')
-    writer.writerow(
+    fieldnames = \
         ('articleId', 'paragraphId', 'sentenceId', 'wordId', 'word',
-         'lemma', 'upos', 'xpos', 'feats', 'head', 'deprel', 'misc'))
+         'lemma', 'upos', 'xpos', 'feats', 'head', 'deprel', 'misc')
+    writer = csv.DictWriter(fp, fieldnames, delimiter=',', lineterminator='\n')
+    writer.writeheader()
     for doc_id in sorted(corpus):
         for s in corpus[doc_id].sentences:
             for t in s.tokens:
-                row = (doc_id, s.par_id, s.sen_id, t.tok_id, t.string,
-                       t['Lemma']['value'], t['POS']['coarseValue'],
-                       t['POS']['PosValue'],
-                       t['feats'] if t['feats'] != '_' else '',
-                       t['Dependency']['head'],
-                       t['Dependency']['DependencyType'],
-                       t.misc if t.misc != '_' else '')
+                row = {
+                    'articleId': doc_id, 'paragraphId': s.par_id,
+                    'sentenceId': s.sen_id, 'wordId': t.tok_id,
+                    'word': t.string, 'lemma': t['Lemma']['value'],
+                    'upos': t['POS']['coarseValue'],
+                    'xpos': t['POS']['PosValue'],
+                    'feats': t['feats'] if t['feats'] != '_' else '',
+                    'head': t['Dependency']['head'],
+                    'deprel': t['Dependency']['DependencyType'],
+                    'misc': t.misc if t.misc != '_' else '' }
                 writer.writerow(row)
 
 
