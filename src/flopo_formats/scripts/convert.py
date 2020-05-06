@@ -11,6 +11,7 @@ import flopo_formats.io.prolog
 
 
 def load_document(filename, _format):
+    logging.info("Reading "+filename)
     if _format == 'webanno-tsv':
         return flopo_formats.io.webannotsv.load_webanno_tsv(filename)
     else:
@@ -18,6 +19,7 @@ def load_document(filename, _format):
 
 
 def save_document(document, filename, _format):
+    logging.info("Writing "+filename)
     if _format == 'webanno-tsv':
         flopo_formats.io.webannotsv.save_webanno_tsv(document, filename)
     elif _format == 'prolog':
@@ -27,6 +29,7 @@ def save_document(document, filename, _format):
 
 
 def load_corpus(input_loc, _format, recursive=False):
+    logging.info("Reading "+input_loc)
     if _format == 'csv':
         return flopo_formats.io.csv.load_csv(input_loc)
     elif _format == 'conll':
@@ -45,6 +48,7 @@ def load_corpus(input_loc, _format, recursive=False):
 
 
 def save_corpus(corpus, output_loc, _format):
+    logging.info("Writing "+output_loc)
     if _format == 'csv':
         # save whole corpus as CSV
         flopo_formats.io.csv.save_csv(corpus, output_loc)
@@ -98,6 +102,10 @@ def parse_arguments():
              ' LAYER:FILE, where LAYER is the name of the layer'\
              ' (for example \'Hedging\') and FILE is a CSV file.'\
              ' Terminate the list with "--".')
+    parser.add_argument(\
+        '-L', '--logging', default='WARNING',
+        choices=['DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL'],
+        help='logging level')
     return parser.parse_args()
 
 
@@ -179,6 +187,10 @@ def check_arguments(args):
 
 def main():
     args = parse_arguments()
+    logging.basicConfig(
+        level=args.logging,
+        format='%(asctime)s - %(levelname)s - %(message)s',
+        datefmt='%Y-%m-%d %H:%M')
     input_loc, output_loc, processing_level = check_arguments(args)
     if processing_level == 'document':
         document = load_document(input_loc, args.input_format)
