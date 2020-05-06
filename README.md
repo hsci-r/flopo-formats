@@ -47,12 +47,14 @@ Convert between different file formats used in FLOPO.
 - `-t`, `--to` -- output format (currently `webanno-tsv` or `prolog`), use
   `flopo-export` to convert WebAnno files back to CSV,
 - `-i`, `--input-file`,
-- `-I`, `--input-dir` -- currently not used,
+- `-I`, `--input-dir`
 - `-o`, `--output-file`,
 - `-O`, `--output-dir` -- use for conversion from CSV to WebAnno,
 - `-a`, `--annotations` -- a list of annotations to add, each having the
   format: `LAYER:FILE`, where `LAYER` is the name of the layer (for example
   'Hedging') and `FILE` is a CSV file.
+- `-r`, `--recursive` -- if reading input from a directory (`-I`), search also
+  subdirectories
 
 ### Examples
 
