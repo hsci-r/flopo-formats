@@ -3,34 +3,36 @@ import os
 import os.path
 
 from flopo_formats.data import Corpus
-import flopo_formats.io
+import flopo_formats.io.csv
+import flopo_formats.io.webannotsv
+import flopo_formats.io.prolog
 
 
 def load_document(filename, _format):
     if _format == 'webanno-tsv':
-        return flopo_formats.io.load_webanno_tsv(filename)
+        return flopo_formats.io.webannotsv.load_webanno_tsv(filename)
     else:
         raise RuntimeError('Unknown format: {}'.format(_format))
 
 
 def save_document(document, filename, _format):
     if _format == 'webanno-tsv':
-        flopo_formats.io.save_webanno_tsv(document, filename)
+        flopo_formats.io.webannotsv.save_webanno_tsv(document, filename)
     elif _format == 'prolog':
-        flopo_formats.io.save_prolog(document, filename)
+        flopo_formats.io.prolog.save_prolog(document, filename)
     else:
         raise RuntimeError('Unknown format: {}'.format(_format))
 
 
 def load_corpus(args):
     if args.input_format == 'csv':
-        return flopo_formats.io.load_conll(args.input_file)
+        return flopo_formats.io.csv.load_conll(args.input_file)
     elif args.input_format == 'webanno-tsv':
         corpus = Corpus()
         for filename in os.listdir(args.input_dir):
             doc_id = filename.replace('.tsv', '')
             path = os.path.join(args.input_dir, filename)
-            corpus[doc_id] = flopo_formats.io.load_webanno_tsv(path)
+            corpus[doc_id] = flopo_formats.io.webannotsv.load_webanno_tsv(path)
         return corpus
     else:
         raise RuntimeError(\
@@ -101,7 +103,8 @@ def main():
         corpus = load_corpus(args)
         for a in args.annotations:
             layer, filename = parse_annotation_source(a)
-            flopo_formats.io.load_annotation_from_csv(corpus, filename, layer)
+            flopo_formats.io.csv.load_annotation_from_csv(
+                corpus, filename, layer)
         save_corpus(corpus, args)
     elif args.input_file is not None:       # convert a single document
         if args.output_file is None:

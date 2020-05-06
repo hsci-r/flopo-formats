@@ -2,7 +2,7 @@ import argparse
 import csv
 import logging
 
-from flopo_formats.io import load_conll
+from flopo_formats.io.csv import load_conll
 import flopo_formats.wrappers.finer
 
 
