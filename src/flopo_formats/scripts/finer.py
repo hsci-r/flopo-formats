@@ -2,7 +2,8 @@ import argparse
 import csv
 import logging
 
-from flopo_formats.io.csv import load_csv
+#from flopo_formats.io.csv import load_csv
+from flopo_formats.io.generic import read_docs
 import flopo_formats.wrappers.finer
 
 
@@ -41,14 +42,12 @@ def main():
         level=args.logging,
         format='%(asctime)s - %(levelname)s - %(message)s',
         datefmt='%Y-%m-%d %H:%M')
-    corpus = load_csv(args.input_file)
     annotations = []
-    for i, (doc_id, doc) in enumerate(corpus.items(), 1):
+    for i, doc in enumerate(read_docs(args.input_file, 'csv', False), 1):
         sentences = [[t.string for t in s.tokens] for s in doc.sentences]
         annotations.append((
-            doc_id,
+            doc.doc_id,
             flopo_formats.wrappers.finer.annotate(sentences, args.remote)))
-        logging.info('Processing document: {} ({}/{})'\
-                     .format(doc_id, i, len(corpus)))
+        logging.info('Processing document: {} ({})'.format(doc.doc_id, i))
     write_annotations(annotations, args.output_file)
 

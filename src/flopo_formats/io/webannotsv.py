@@ -210,7 +210,7 @@ class WebAnnoTSVReader:
             if layer not in WEBANNO_SINGLE_TOKEN_LAYERS:
                 self._finalize_last_span(layer)
         self._finalize_sentence()
-        return Document(self.schema, self.sentences, self.annotations)
+        return Document(None, self.schema, self.sentences, self.annotations)
 
 
 def write_webanno_tsv(document, fp):

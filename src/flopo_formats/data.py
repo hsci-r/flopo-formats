@@ -53,7 +53,8 @@ class Annotation:
 
 
 class Document:
-    def __init__(self, schema, sentences, annotations=None):
+    def __init__(self, doc_id, schema, sentences, annotations=None):
+        self.doc_id = doc_id
         self.schema = schema.copy() if schema else []
         self.sentences = sentences
         self.annotations = annotations if annotations is not None else {}

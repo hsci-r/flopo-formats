@@ -15,16 +15,18 @@ class CoNLLCorpusReader(CSVCorpusReader):
         ('wordId', 'word', 'lemma', 'upos', 'xpos',
          'feats', 'head', 'deprel', 'deps', 'misc')
 
-    def __init__(self, filename = None):
+    def __init__(self):
         self.doc_id = None
-        self.next_doc_id = filename.replace('.txt', '') if filename else None
         self.sen_id = None
         self.sen_id_shift = 0
         self.par_id = 0
         self.sentences = []
         self.tokens = []
         self.idx = 0
-        self.corpus = Corpus()
+        self.doc = None
+
+    def set_next_doc_id(self, next_doc_id):
+        self.next_doc_id = next_doc_id
 
     def _finalize_sentence(self):
         if self.tokens:
@@ -36,8 +38,7 @@ class CoNLLCorpusReader(CSVCorpusReader):
         self._finalize_sentence()
         if self.next_doc_id is not None or force:
             if self.sentences:
-                doc = Document(CSVCorpusReader.SCHEMA, self.sentences)
-                self.corpus.documents[self.doc_id] = doc
+                self.doc = Document(self.doc_id, CSVCorpusReader.SCHEMA, self.sentences)
             self.sentences = []
             self.idx = 0
             self.doc_id = self.next_doc_id
@@ -81,32 +82,10 @@ class CoNLLCorpusReader(CSVCorpusReader):
                 self._read_token(line)
             else:
                 logging.warning('Ignoring malformed line: {}'.format(line))
+            # if a document is ready, yield it
+            if self.doc:
+                yield self.doc
+                self.doc = None
         self._finalize_document(force=True)
-        return self.corpus
-
-
-def load_conll(filename, recursive=False):
-
-    def _get_files_in_dir(dirname, recursive=False):
-        results = []
-        if not recursive:
-            for f in os.listdir(dirname):
-                path = os.path.join(dirname, f)
-                if os.path.isfile(path):
-                    results.append(path)
-        else:
-            for subdirname, dirs, files in os.walk(dirname):
-                results.extend([os.path.join(subdirname, f) for f in files])
-        return results
-
-    if os.path.isfile(filename):
-        with open(filename) as fp:
-            return CoNLLCorpusReader(filename).read(fp)
-    elif os.path.isdir(filename):
-        reader = CoNLLCorpusReader()
-        for f in _get_files_in_dir(filename, recursive=recursive):
-            reader.next_doc_id = os.path.basename(f)
-            with open(f) as fp:
-                reader.read(fp)
-        return reader.corpus
+        yield self.doc
 

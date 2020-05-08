@@ -22,7 +22,7 @@ consists of calls like this:
 mkdir -p data/work/webanno
 flopo-convert \
 	-f csv -t webanno-tsv \
-	-i data/final/kiky.conll.csv -O data/work/webanno/
+	-i data/final/kiky.conll.csv -o data/work/webanno/
 	-a NamedEntity:data/final/kiky.ner.csv \
 	   Quote:data/final/kiky.quotes.csv \
 	   Metaphor:data/final/kiky.metaphors.csv \
@@ -46,20 +46,21 @@ Convert between different file formats used in FLOPO.
 - `-f`, `--from` -- input format (currently `conll`, `csv` or `webanno-tsv`),
 - `-t`, `--to` -- output format (currently `webanno-tsv` or `prolog`), use
   `flopo-export` to convert WebAnno files back to CSV,
-- `-i`, `--input-file`,
-- `-I`, `--input-dir`
-- `-o`, `--output-file`,
-- `-O`, `--output-dir` -- use for conversion from CSV to WebAnno,
+- `-i`, `--input-path` -- path to the input file or directory,
+- `-o`, `--output-path` -- path to the output file or directory,
 - `-a`, `--annotations` -- a list of annotations to add, each having the
   format: `LAYER:FILE`, where `LAYER` is the name of the layer (for example
   'Hedging') and `FILE` is a CSV file.
-- `-r`, `--recursive` -- if reading input from a directory (`-I`), search also
+- `-r`, `--recursive` -- if reading input from a directory, search also
   subdirectories
+
+The `-i` and `-o` arguments can be either a file or directory, depending on the
+format. The right course of action is determined automatically.
 
 ### Examples
 
 ```
-flopo-convert -f csv -t webanno-tsv -i kiky.conll.csv -O webanno/
+flopo-convert -f csv -t webanno-tsv -i kiky.conll.csv -o webanno/
 ```
 
 Convert a whole corpus from CSV format (CoNLL columns) to WebAnno-TSV files and

@@ -22,7 +22,7 @@ class CSVCorpusReader:
         self.sentences = []
         self.tokens = []
         self.idx = 0
-        self.corpus = Corpus()
+        self.doc = None
 
     def _finalize_sentence(self, line):
         if self.tokens:
@@ -33,12 +33,11 @@ class CSVCorpusReader:
 
     def _finalize_document(self, line):
         self._finalize_sentence(line)
-        if self.sentences:
-            doc = Document(CSVCorpusReader.SCHEMA, self.sentences)
-            self.corpus.documents[self.doc_id] = doc
+        doc = Document(self.doc_id, CSVCorpusReader.SCHEMA, self.sentences)
         self.sentences = []
         self.doc_id = line['articleId'] if line is not None else None
         self.idx = 0
+        return doc
 
     def _determine_space_after(self, line):
         m = CSVCorpusReader.PATTERN_SPACES_AFTER.match(line['misc'])
@@ -100,30 +99,44 @@ class CSVCorpusReader:
         reader = csv.DictReader(fp)
         for line in reader:
             if line['articleId'] != self.doc_id:
-                self._finalize_document(line)
+                if self.doc_id is not None:
+                    yield self._finalize_document(line)
+                else:
+                    self.doc_id = line['articleId']
             elif int(line['sentenceId']) != self.sen_id:
-                self._finalize_sentence(line)
+                if self.sen_id is not None:
+                    self._finalize_sentence(line)
+                else:
+                    self.sen_id = int(line['sentenceId'])
             self._read_token(line)
-        self._finalize_document(None)
-        return self.corpus
+        yield self._finalize_document(None)
 
 
 def load_csv(filename):
+    corpus = Corpus()
     with open(filename) as fp:
-        return CSVCorpusReader().read(fp)
+        for doc in CSVCorpusReader().read(fp):
+            corpus[doc_id] = doc
+    return corpus
 
 
-def write_csv(corpus, fp):
-    fieldnames = \
+class CSVCorpusWriter:
+    FIELDNAMES = \
         ('articleId', 'paragraphId', 'sentenceId', 'wordId', 'word',
          'lemma', 'upos', 'xpos', 'feats', 'head', 'deprel', 'misc')
-    writer = csv.DictWriter(fp, fieldnames, delimiter=',', lineterminator='\n')
-    writer.writeheader()
-    for doc_id in sorted(corpus):
-        for s in corpus[doc_id].sentences:
+
+    def __init__(self, fp):
+        self.fp = fp
+        self.writer = csv.DictWriter(
+            self.fp, CSVCorpusWriter.FIELDNAMES,
+            delimiter=',', lineterminator='\n')
+        self.writer.writeheader()
+
+    def write(self, doc):
+        for s in doc.sentences:
             for t in s.tokens:
                 row = {
-                    'articleId': doc_id, 'paragraphId': s.par_id,
+                    'articleId': doc.doc_id, 'paragraphId': s.par_id,
                     'sentenceId': s.sen_id, 'wordId': t.tok_id,
                     'word': t.string, 'lemma': t['Lemma']['value'],
                     'upos': t['POS']['coarseValue'],
@@ -132,12 +145,7 @@ def write_csv(corpus, fp):
                     'head': t['Dependency']['head'],
                     'deprel': t['Dependency']['DependencyType'],
                     'misc': t.misc if t.misc != '_' else '' }
-                writer.writerow(row)
-
-
-def save_csv(corpus, filename):
-    with open(filename, 'w+') as fp:
-        write_csv(corpus, fp)
+                self.writer.writerow(row)
 
 
 EXCLUDE_CSV_KEYS = { 'articleId', 'paragraphId', 'sentenceId', 'wordId',

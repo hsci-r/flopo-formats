@@ -105,7 +105,9 @@ class CSVCorpusReaderTest(unittest.TestCase):
 100189803,3,3,13,.,.,PUNCT,Punct,,3,punct,SpacesAfter=\\n\\n'''
 
     def test_read(self):
-        corpus = CSVCorpusReader().read(io.StringIO(self.TEST_DOC))
+        corpus = Corpus()
+        for doc in CSVCorpusReader().read(io.StringIO(self.TEST_DOC)):
+            corpus[doc.doc_id] = doc
         # test the number of documents and their IDs
         self.assertEqual(len(corpus), 3)
         self.assertIn('100023169', corpus)
