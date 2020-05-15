@@ -85,7 +85,7 @@ def write_docs(docs, path, _format):
     elif _format == 'prolog':
         if os.path.isdir(path):
             for doc in docs:
-                with open(os.path.join(path, doc.doc_id), 'w+') as fp:
+                with open(os.path.join(path, doc.doc_id+'.pl'), 'w+') as fp:
                     write_prolog(doc, fp)
         else:
             # save a single document
