@@ -148,12 +148,12 @@ class ReadAnnotationTest(unittest.TestCase):
 #T_RL=de.tudarmstadt.ukp.dkpro.core.api.syntax.type.dependency.Dependency|DependencyType|flavor|BT_de.tudarmstadt.ukp.dkpro.core.api.lexmorph.type.pos.POS
 
 
-#Text=Yhteiskuntasopimusta pohjustetaan elokuussa
+#Text=Yhteiskuntasopimusta pohjustetaan elokuussa 
 1-1	0-20	Yhteiskuntasopimusta	yhteis#kunta#sopimus	NOUN	N	obj	*	1-2	
 1-2	21-33	pohjustetaan	pohjustaa	VERB	V	root	*	1-2	
 1-3	34-43	elokuussa	elokuu	NOUN	N	obl	*	1-2	
 
-#Text=– Juha Sipilän (kesk.) hallitus haluaa työmarkkinajärjestöjen kanssa laajan yhteiskuntasopimuksen, joka vauhdittaisi talouskasvua ja työllisyyttä.
+#Text=– Juha Sipilän (kesk.) hallitus haluaa työmarkkinajärjestöjen kanssa laajan yhteiskuntasopimuksen, joka vauhdittaisi talouskasvua ja työllisyyttä. 
 2-1	44-45	–	–	PUNCT	Punct	punct	*	2-8	
 2-2	46-50	Juha	Juha	PROPN	N	nmod:poss	*	2-7	
 2-3	51-58	Sipilän	Sipilä	PROPN	N	flat:name	*	2-2	
@@ -174,7 +174,7 @@ class ReadAnnotationTest(unittest.TestCase):
 2-18	177-189	työllisyyttä	työllisyys	NOUN	N	conj	*	2-16	
 2-19	189-190	.	.	PUNCT	Punct	punct	*	2-8	
 
-#Text=– Hallitus tekee torstaina työmarkkinajärjestöille esityksen toimista, joihin kuuluu yksikkötyökustannusten alentaminen vähintään 5 prosentilla ja muutosturva.
+#Text=– Hallitus tekee torstaina työmarkkinajärjestöille esityksen toimista, joihin kuuluu yksikkötyökustannusten alentaminen vähintään 5 prosentilla ja muutosturva. 
 3-1	191-192	–	–	PUNCT	Punct	punct	*	3-3	
 3-2	193-201	Hallitus	hallitus	NOUN	N	nsubj	*	3-3	
 3-3	202-207	tekee	tehdä	VERB	V	root	*	3-3	
@@ -216,12 +216,12 @@ class ReadAnnotationTest(unittest.TestCase):
 #T_SP=webanno.custom.Quote|
 
 
-#Text=Yhteiskuntasopimusta pohjustetaan elokuussa
+#Text=Yhteiskuntasopimusta pohjustetaan elokuussa 
 1-1	0-20	Yhteiskuntasopimusta	yhteis#kunta#sopimus	NOUN	N	obj	*	1-2	_	_	
 1-2	21-33	pohjustetaan	pohjustaa	VERB	V	root	*	1-2	_	_	
 1-3	34-43	elokuussa	elokuu	NOUN	N	obl	*	1-2	TimexTmeDat	_	
 
-#Text=– Juha Sipilän (kesk.) hallitus haluaa työmarkkinajärjestöjen kanssa laajan yhteiskuntasopimuksen, joka vauhdittaisi talouskasvua ja työllisyyttä.
+#Text=– Juha Sipilän (kesk.) hallitus haluaa työmarkkinajärjestöjen kanssa laajan yhteiskuntasopimuksen, joka vauhdittaisi talouskasvua ja työllisyyttä. 
 2-1	44-45	–	–	PUNCT	Punct	punct	*	2-8	_	*[3]	
 2-2	46-50	Juha	Juha	PROPN	N	nmod:poss	*	2-7	EnamexPrsHum[1]	*[3]	
 2-3	51-58	Sipilän	Sipilä	PROPN	N	flat:name	*	2-2	EnamexPrsHum[1]	*[3]	
@@ -242,7 +242,7 @@ class ReadAnnotationTest(unittest.TestCase):
 2-18	177-189	työllisyyttä	työllisyys	NOUN	N	conj	*	2-16	_	*[3]	
 2-19	189-190	.	.	PUNCT	Punct	punct	*	2-8	_	*[3]	
 
-#Text=– Hallitus tekee torstaina työmarkkinajärjestöille esityksen toimista, joihin kuuluu yksikkötyökustannusten alentaminen vähintään 5 prosentilla ja muutosturva.
+#Text=– Hallitus tekee torstaina työmarkkinajärjestöille esityksen toimista, joihin kuuluu yksikkötyökustannusten alentaminen vähintään 5 prosentilla ja muutosturva. 
 3-1	191-192	–	–	PUNCT	Punct	punct	*	3-3	_	*[3]	
 3-2	193-201	Hallitus	hallitus	NOUN	N	nsubj	*	3-3	_	*[3]	
 3-3	202-207	tekee	tehdä	VERB	V	root	*	3-3	_	*[3]	

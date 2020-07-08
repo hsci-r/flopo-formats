@@ -58,6 +58,8 @@ class WebAnnoTSVReader:
         self.last_span = None
         self.annotations = None
         self.sen_id = 1
+        self.par_id = 1
+        self.sen_text_lines = []
 
     def _read_features(self, string):
         return [(WEBANNO_FEATURES_INV[f] if f in WEBANNO_FEATURES_INV else f) \
@@ -81,12 +83,14 @@ class WebAnnoTSVReader:
             raise Exception('Two empty lines after header missing.')
         return schema
 
-    def _token_from_row(self, row):
+    def _token_from_row(self, row, idx):
         tok_id = int(row.pop(0).split('-')[1])
-        start_idx, end_idx = row.pop(0).split('-')
+        start_idx, end_idx = tuple(map(int, row.pop(0).split('-')))
+        # sp is the space before the currently read token
+        sp = ' ' if start_idx-idx > 0 else ''
         string = row.pop(0)
         # TODO space after
-        return Token(tok_id, start_idx, end_idx, string)
+        return Token(tok_id, string), sp, end_idx
 
     def _parse_cell(self, cell):
         '''
@@ -168,14 +172,15 @@ class WebAnnoTSVReader:
             raise RuntimeError('This shouldn\'t happen')
 
     def _finalize_sentence(self):
-        # fix space after
-        # TODO not quite correct
-        for i, t in enumerate(self.tokens[1:], 1):
-            if t.start_idx == self.tokens[i-1].end_idx:
-                self.tokens[i-1].space_after = ''
-        self.sentences.append(Sentence(self.tokens, sen_id=self.sen_id))
+        self.sentences.append(
+            Sentence(self.tokens, sen_id=self.sen_id, par_id=self.par_id))
         self.tokens = []
         self.sen_id += 1
+        # paragraph end is signalized by an empty line after the sentence
+        if self.sen_text_lines[-1] == '':
+            self.par_id += 1
+        # apart from that, the text lines can be ignored
+        self.sen_text_lines = []
 
     def read(self, fp):
         self.schema = self._read_header(fp)
@@ -186,15 +191,23 @@ class WebAnnoTSVReader:
                                     'end' : None, 'values' : None } \
                            for layer, features in self.schema \
                            if layer not in WEBANNO_SINGLE_TOKEN_LAYERS }
+        idx = 0
+        par_end = False             # is the current sentence paragraph end?
         for line in fp:
             line = line.rstrip()
             if not line:
                 self._finalize_sentence()
             elif line.startswith('#'):
-                continue
+                if line.startswith('#Text='):
+                    self.sen_text_lines.append(line[len('#Text='):])
+                # other lines starting with "#" are ignored
             else:
                 row = line.split('\t')
-                t = self._token_from_row(row)
+                t, sp, newidx = self._token_from_row(row, idx)
+                idx = newidx
+                # fix the space_after of the previous token
+                if self.tokens:
+                    self.tokens[-1].space_after = sp
                 self.tokens.append(t)
                 for layer, features in self.schema:
                     values, span_ids = {}, {}
@@ -225,11 +238,11 @@ def write_webanno_tsv(document, fp):
                  for f in features])+'\n')
         fp.write('\n')
 
-    def _write_sentence_header(sentence, trailing_space=False):
+    def _write_sentence_header(sentence, tsp=''):
         fp.write('\n')
-        text = str(sentence).replace('\\', '\\\\') + \
-               (' ' if trailing_space else '')
-        fp.write('#Text={}\n'.format(text))
+        text = str(sentence).replace('\\', '\\\\') + tsp
+        for line in text.split('\n'):
+            fp.write('#Text={}\n'.format(line))
 
     def _create_empty_columns():
         result = {}
@@ -274,9 +287,9 @@ def write_webanno_tsv(document, fp):
                     i += 1
                     j = 0
 
-    def _format_token(sen_id, j, t, columns):
+    def _format_token(sen_id, idx, j, t, columns):
         return ['{}-{}'.format(sen_id, t.tok_id),
-                '{}-{}'.format(t.start_idx, t.end_idx),
+                '{}-{}'.format(idx, idx+len(t.string)),
                 t.string] + \
                 [columns[layer+'.'+f][sen_id-1][j] \
                     for layer, features in document.schema \
@@ -294,13 +307,17 @@ def write_webanno_tsv(document, fp):
                 span_id = last_span_id
                 last_span_id += 1
             _insert_annotation(a, layer, span_id, columns)
+    idx = 0
     for i, s in enumerate(document.sentences):
         # if not last sentence in the paragraph -- prevent WebAnno from
         # inserting a line feed after this sentence by adding a trailing space
-        tsp = (i+1 < len(document.sentences) \
-               and s.par_id is not None \
-               and document.sentences[i+1].par_id == s.par_id)
-        _write_sentence_header(s, trailing_space=tsp)
+        tsp = ''
+        if i+1 < len(document.sentences) and s.par_id is not None:
+            if document.sentences[i+1].par_id == s.par_id:
+                tsp = ' '
+            else:
+                tsp = '\n'
+        _write_sentence_header(s, tsp=tsp)
         # fill the columns with single-token annotations
         # FIXME rewrite in a more readable way
         for j, t in enumerate(s.tokens):
@@ -312,7 +329,12 @@ def write_webanno_tsv(document, fp):
                                 _format_value(val, f, i+1, j+1, None)
         # write the tokens
         for j, t in enumerate(s.tokens):
-            fp.write('\t'.join(_format_token(s.sen_id, j, t, columns))+'\t\n')
+            fp.write('\t'.join(_format_token(s.sen_id, idx, j, t, columns))+'\t\n')
+            idx += len(t.string)+len(t.space_after)
+        # take into account the additional line break at the end of the
+        # paragraph
+        if tsp == '\n':
+            idx += 1
 
 
 def save_webanno_tsv(document, filename):

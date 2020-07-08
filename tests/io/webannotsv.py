@@ -91,12 +91,12 @@ class WebAnnoTSVReaderTest(unittest.TestCase):
 #T_SP=webanno.custom.Metaphor|category
 
 
-#Text=Yhteiskuntasopimusta pohjustetaan elokuussa
+#Text=Yhteiskuntasopimusta pohjustetaan elokuussa 
 1-1	0-20	Yhteiskuntasopimusta	yhteis#kunta#sopimus	NOUN	N	obj	*	1-2	_	_	_	_	
 1-2	21-33	pohjustetaan	pohjustaa	VERB	V	root	*	1-2	_	_	_	_	
 1-3	34-43	elokuussa	elokuu	NOUN	N	obl	*	1-2	TimexTmeDat	_	_	_	
 
-#Text=– Juha Sipilän (kesk.) hallitus haluaa työmarkkinajärjestöjen kanssa laajan yhteiskuntasopimuksen, joka vauhdittaisi talouskasvua ja työllisyyttä.
+#Text=– Juha Sipilän (kesk.) hallitus haluaa työmarkkinajärjestöjen kanssa laajan yhteiskuntasopimuksen, joka vauhdittaisi talouskasvua ja työllisyyttä. 
 2-1	44-45	–	–	PUNCT	Punct	punct	*	2-8	_	*[2]	_	_	
 2-2	46-50	Juha	Juha	PROPN	N	nmod:poss	*	2-7	EnamexPrsHum[1]	*[2]	_	_	
 2-3	51-58	Sipilän	Sipilä	PROPN	N	flat:name	*	2-2	EnamexPrsHum[1]	*[2]	_	_	
@@ -117,7 +117,7 @@ class WebAnnoTSVReaderTest(unittest.TestCase):
 2-18	177-189	työllisyyttä	työllisyys	NOUN	N	conj	*	2-16	_	*[2]	_	_	
 2-19	189-190	.	.	PUNCT	Punct	punct	*	2-8	_	*[2]	_	_	
 
-#Text=– Hallitus tekee torstaina työmarkkinajärjestöille esityksen toimista, joihin kuuluu yksikkötyökustannusten alentaminen vähintään 5 prosentilla ja muutosturva.
+#Text=– Hallitus tekee torstaina työmarkkinajärjestöille esityksen toimista, joihin kuuluu yksikkötyökustannusten alentaminen vähintään 5 prosentilla ja muutosturva. 
 3-1	191-192	–	–	PUNCT	Punct	punct	*	3-3	_	*[3]	_	_	
 3-2	193-201	Hallitus	hallitus	NOUN	N	nsubj	*	3-3	_	*[3]	_	_	
 3-3	202-207	tekee	tehdä	VERB	V	root	*	3-3	_	*[3]	_	_	
@@ -205,9 +205,9 @@ class WebAnnoTSVReaderTest(unittest.TestCase):
             doc.annotations['Hedging'])
         # check whether detokenized sentences are equal to the Text headers
         lines = self.TEST_DOC.split('\n')
-        self.assertEqual('#Text=' + str(doc.sentences[0]), lines[10])
-        self.assertEqual('#Text=' + str(doc.sentences[1]), lines[15])
-        self.assertEqual('#Text=' + str(doc.sentences[2]), lines[36])
+        self.assertEqual('#Text=' + str(doc.sentences[0]) + ' ', lines[10])
+        self.assertEqual('#Text=' + str(doc.sentences[1]) + ' ', lines[15])
+        self.assertEqual('#Text=' + str(doc.sentences[2]) + ' ', lines[36])
         self.assertEqual('#Text=' + str(doc.sentences[3]), lines[56])
 
 class WebAnnoTSVReadWriteTest(unittest.TestCase):
@@ -219,14 +219,14 @@ class WebAnnoTSVReadWriteTest(unittest.TestCase):
 #T_RL=de.tudarmstadt.ukp.dkpro.core.api.syntax.type.dependency.Dependency|DependencyType|flavor|BT_de.tudarmstadt.ukp.dkpro.core.api.lexmorph.type.pos.POS
 
 
-#Text=Uusi suurjärjestö hahmottuu työmarkkinamyräkästä huolimatta
+#Text=Uusi suurjärjestö hahmottuu työmarkkinamyräkästä huolimatta 
 1-1	0-4	Uusi	uusi	ADJ	A	amod	*	1-2	
 1-2	5-17	suurjärjestö	suur#järjestö	NOUN	N	nsubj	*	1-3	
 1-3	18-27	hahmottuu	hahmottua	VERB	V	root	*	1-3	
 1-4	28-48	työmarkkinamyräkästä	työ#markkina#myräkkä	NOUN	N	obl	*	1-3	
 1-5	49-59	huolimatta	huolimatta	ADP	Adp	case	*	1-4	
 
-#Text=## SAK ja STTK: Suurjärjestön tarve on vain korostunut
+#Text=## SAK ja STTK: Suurjärjestön tarve on vain korostunut 
 2-1	60-62	##	##	SYM	Punct	punct	*	2-2	
 2-2	63-66	SAK	SAK	NOUN	N	root	*	2-2	
 2-3	67-69	ja	ja	CCONJ	C	cc	*	2-4	
@@ -238,7 +238,7 @@ class WebAnnoTSVReadWriteTest(unittest.TestCase):
 2-9	99-103	vain	vain	ADV	Adv	advmod	*	2-10	
 2-10	104-114	korostunut	korostua	VERB	V	parataxis	*	2-2	
 
-#Text=Uuden suuren palkansaajajärjestön suunnittelu etenee suunnitelmien mukaan syksyn työmarkkinamyllerryksestä huolimatta.
+#Text=Uuden suuren palkansaajajärjestön suunnittelu etenee suunnitelmien mukaan syksyn työmarkkinamyllerryksestä huolimatta. 
 3-1	115-120	Uuden	uusi	ADJ	A	amod	*	3-3	
 3-2	121-127	suuren	suuri	ADJ	A	amod	*	3-3	
 3-3	128-148	palkansaajajärjestön	palkan#saaja#järjestö	NOUN	N	nmod:gobj	*	3-4	

@@ -1,9 +1,6 @@
 class Token:
-    def __init__(self, tok_id, start_idx, end_idx, string, feats = '',
-                 misc = '', space_after=' '):
+    def __init__(self, tok_id, string, feats = '', misc = '', space_after=' '):
         self.tok_id = int(tok_id)
-        self.start_idx = int(start_idx)
-        self.end_idx = int(end_idx)
         self.string = string
         self.space_after = space_after
         self.feats = feats

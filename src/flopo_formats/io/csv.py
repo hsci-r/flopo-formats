@@ -22,7 +22,6 @@ class CSVCorpusReader:
         self.par_id = None
         self.sentences = []
         self.tokens = []
-        self.idx = 0
         self.doc = None
 
     def _finalize_sentence(self, line):
@@ -39,7 +38,6 @@ class CSVCorpusReader:
         doc = Document(self.doc_id, CSVCorpusReader.SCHEMA, self.sentences)
         self.sentences = []
         self.doc_id = line['articleId'] if line is not None else None
-        self.idx = 0
         return doc
 
     def _determine_space_after(self, line):
@@ -78,8 +76,6 @@ class CSVCorpusReader:
             space_after = ' '
         t = Token(
             line['wordId'],
-            self.idx,
-            self.idx+len(line['word']),
             line['word'],
             misc=line['misc'],
             space_after=space_after)
@@ -95,7 +91,6 @@ class CSVCorpusReader:
             { 'DependencyType' : line['deprel'], 'flavor' : '',
               'head' : int(line['head']) }
         self.tokens.append(t)
-        self.idx += len(line['word']) + len(space_after)
 
 
     def read(self, fp):
