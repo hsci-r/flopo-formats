@@ -2,7 +2,8 @@ import re
 
 from flopo_formats.data import Document, Sentence, Token, Annotation
 
-
+# TODO if not included here, fall back to default:
+# T_SP=de.webanno.custom.LayerName
 WEBANNO_LAYERS = {
     'Lemma' :'T_SP=de.tudarmstadt.ukp.dkpro.core.api.segmentation.type.Lemma',
     'POS' : 'T_SP=de.tudarmstadt.ukp.dkpro.core.api.lexmorph.type.pos.POS',
@@ -13,7 +14,8 @@ WEBANNO_LAYERS = {
     'Metaphor' : 'T_SP=webanno.custom.Metaphor',
     'Misc' : 'T_SP=webanno.custom.Misc',
     'IQuote' : 'T_SP=webanno.custom.IQuote',
-    'NamedEntity' : 'T_SP=de.tudarmstadt.ukp.dkpro.core.api.ner.type.NamedEntity'
+    'NamedEntity' : 'T_SP=de.tudarmstadt.ukp.dkpro.core.api.ner.type.NamedEntity',
+    'TextReuse' : 'T_SP=webanno.custom.TextReuse'
 }
 WEBANNO_LAYERS_INV = { val: key for key, val in WEBANNO_LAYERS.items() }
 
