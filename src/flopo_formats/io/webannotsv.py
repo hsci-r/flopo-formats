@@ -225,9 +225,11 @@ def write_webanno_tsv(document, fp):
                  for f in features])+'\n')
         fp.write('\n')
 
-    def _write_sentence_header(sentence):
+    def _write_sentence_header(sentence, trailing_space=False):
         fp.write('\n')
-        fp.write('#Text={}\n'.format(str(sentence).replace('\\', '\\\\')))
+        text = str(sentence).replace('\\', '\\\\') + \
+               (' ' if trailing_space else '')
+        fp.write('#Text={}\n'.format(text))
 
     def _create_empty_columns():
         result = {}
@@ -293,7 +295,12 @@ def write_webanno_tsv(document, fp):
                 last_span_id += 1
             _insert_annotation(a, layer, span_id, columns)
     for i, s in enumerate(document.sentences):
-        _write_sentence_header(s)
+        # if not last sentence in the paragraph -- prevent WebAnno from
+        # inserting a line feed after this sentence by adding a trailing space
+        tsp = (i+1 < len(document.sentences) \
+               and s.par_id is not None \
+               and document.sentences[i+1].par_id == s.par_id)
+        _write_sentence_header(s, trailing_space=tsp)
         # fill the columns with single-token annotations
         # FIXME rewrite in a more readable way
         for j, t in enumerate(s.tokens):
