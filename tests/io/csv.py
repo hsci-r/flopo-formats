@@ -124,6 +124,10 @@ class CSVCorpusReaderTest(unittest.TestCase):
             sum(len(s) for s in corpus['100136470'].sentences), 29)
         self.assertEqual(
             sum(len(s) for s in corpus['100189803'].sentences), 24)
+        # test paragraph IDs
+        self.assertEqual(corpus['100023169'].sentences[3].par_id, 4)
+        self.assertEqual(corpus['100136470'].sentences[3].par_id, 3)
+        self.assertEqual(corpus['100189803'].sentences[2].par_id, 3)
 
         # TODO test the start and end indices of last tokens
 

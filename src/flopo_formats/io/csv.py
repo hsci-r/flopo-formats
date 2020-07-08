@@ -19,6 +19,7 @@ class CSVCorpusReader:
     def __init__(self):
         self.doc_id = None
         self.sen_id = None
+        self.par_id = None
         self.sentences = []
         self.tokens = []
         self.idx = 0
@@ -26,10 +27,12 @@ class CSVCorpusReader:
 
     def _finalize_sentence(self, line):
         if self.tokens:
-            s = Sentence(self.tokens)
+            s = Sentence(
+                self.tokens, sen_id = self.sen_id, par_id = self.par_id)
             self.sentences.append(s)
             self.tokens = []
         self.sen_id = int(line['sentenceId']) if line is not None else None
+        self.par_id = int(line['paragraphId']) if line is not None else None
 
     def _finalize_document(self, line):
         self._finalize_sentence(line)
@@ -108,6 +111,7 @@ class CSVCorpusReader:
                     self._finalize_sentence(line)
                 else:
                     self.sen_id = int(line['sentenceId'])
+                    self.par_id = int(line['paragraphId'])
             self._read_token(line)
         yield self._finalize_document(None)
 

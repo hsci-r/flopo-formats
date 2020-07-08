@@ -173,7 +173,7 @@ class WebAnnoTSVReader:
         for i, t in enumerate(self.tokens[1:], 1):
             if t.start_idx == self.tokens[i-1].end_idx:
                 self.tokens[i-1].space_after = ''
-        self.sentences.append(Sentence(self.tokens))
+        self.sentences.append(Sentence(self.tokens, sen_id=self.sen_id))
         self.tokens = []
         self.sen_id += 1
 
@@ -272,11 +272,11 @@ def write_webanno_tsv(document, fp):
                     i += 1
                     j = 0
 
-    def _format_token(i, j, t, columns):
-        return ['{}-{}'.format(i+1, t.tok_id),
+    def _format_token(sen_id, j, t, columns):
+        return ['{}-{}'.format(sen_id, t.tok_id),
                 '{}-{}'.format(t.start_idx, t.end_idx),
                 t.string] + \
-                [columns[layer+'.'+f][i][j] \
+                [columns[layer+'.'+f][sen_id-1][j] \
                     for layer, features in document.schema \
                     for f in features]
 
@@ -305,7 +305,7 @@ def write_webanno_tsv(document, fp):
                                 _format_value(val, f, i+1, j+1, None)
         # write the tokens
         for j, t in enumerate(s.tokens):
-            fp.write('\t'.join(_format_token(i, j, t, columns))+'\t\n')
+            fp.write('\t'.join(_format_token(s.sen_id, j, t, columns))+'\t\n')
 
 
 def save_webanno_tsv(document, filename):
