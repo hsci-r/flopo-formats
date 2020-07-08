@@ -27,8 +27,8 @@ def package(corpus_dir, name, template, output_file=None):
     with ZipFile(output_file, 'w', compression=ZIP_DEFLATED) as myzip:
         sources = []
         for path in Path(corpus_dir).glob('*'):
-            sources.append(path.stem)
-            myzip.write(path, os.path.join('source', path.stem))
+            sources.append(path.name)
+            myzip.write(path, os.path.join('source', path.name))
         template['name'] = name
         template['source_documents'] = \
             list(map(lambda source: { **sourceTemplate, 'name' : source },
