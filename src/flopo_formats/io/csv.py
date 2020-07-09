@@ -152,7 +152,11 @@ EXCLUDE_CSV_KEYS = { 'articleId', 'paragraphId', 'sentenceId', 'wordId',
                      'endSentenceId' }
 
 
-def read_annotation_from_csv(corpus, fp, layer):
+def read_annotation_from_csv(docs, fp, layer):
+
+    def _add_layer_to_schema(doc, layer, features):
+        doc.schema.append((layer, features))
+        doc.annotations[layer] = []
 
     def _parse_line(line, features):
         start_sen_id, end_sen_id = None, None
@@ -189,27 +193,14 @@ def read_annotation_from_csv(corpus, fp, layer):
         if start_sen_id > end_sen_id \
                 or (start_sen_id == end_sen_id and start_w_id > end_w_id):
             raise Exception('Span end before start')
-    
-    # determine the layer features from the CSV header
-    reader = csv.DictReader(fp)
-    features = tuple(k for k in reader.fieldnames if k not in EXCLUDE_CSV_KEYS)
-    if not features:
-        features = ('',)
-    # add the annotation layer in each document
-    for doc_id in corpus.documents:
-        corpus.documents[doc_id].schema.append((layer, features))
-        corpus.documents[doc_id].annotations[layer] = []
-    # read the annotation spans from CSV lines
-    for line in reader:
-        doc_id = line['articleId']
-        if doc_id not in corpus.documents:
-            continue
+
+    def _process_line(line, doc, layer, features):
         try:
             start_sen_id, start_w_id, end_sen_id, end_w_id, values = \
                 _parse_line(line, features)
             _check_boundaries(
-                corpus[doc_id], start_sen_id, start_w_id, end_sen_id, end_w_id)
-            corpus[doc_id].annotations[layer].append(
+                doc, start_sen_id, start_w_id, end_sen_id, end_w_id)
+            doc.annotations[layer].append(
                 Annotation(
                     start_sen_id, start_w_id, end_sen_id, end_w_id, values))
         except Exception as e:
@@ -219,8 +210,40 @@ def read_annotation_from_csv(corpus, fp, layer):
                 .format(str(e), layer, line['articleId'],
                         start_sen_id, start_w_id, end_sen_id, end_w_id))
 
+    def _next_line(reader, prev_doc_id=None):
+        result = None
+        try:
+            result = next(reader)
+            if prev_doc_id is not None and prev_doc_id > result['articleId']:
+                logging.warning(
+                    'Annotation CSV not sorted: {} > {} for layer {}!'\
+                    .format(prev_doc_id, result['articleId'], layer))
+        except StopIteration:
+            pass
+        return result
+    
+    # determine the layer features from the CSV header
+    reader = csv.DictReader(fp)
+    features = tuple(k for k in reader.fieldnames if k not in EXCLUDE_CSV_KEYS)
+    if not features:
+        features = ('',)
+    cur_line = _next_line(reader)
+    for doc in docs:
+        _add_layer_to_schema(doc, layer, features)
+        # skip all the annotations for documents preceding the current one
+        while cur_line is not None and cur_line['articleId'] < doc.doc_id:
+            cur_line = _next_line(reader, prev_doc_id=cur_line['articleId'])
+        # read the annotations for the current document
+        while cur_line is not None and cur_line['articleId'] == doc.doc_id:
+            _process_line(cur_line, doc, layer, features)
+            cur_line = _next_line(reader, prev_doc_id=cur_line['articleId'])
+        # now cur_line['articleId'] > doc.doc_id, so we can advance
+        # to the next document
+        yield doc
 
-def load_annotation_from_csv(corpus, filename, annotation_name):
+
+def load_annotation_from_csv(docs, filename, annotation_name):
     with open(filename) as fp:
-        read_annotation_from_csv(corpus, fp, annotation_name)
+        for doc in read_annotation_from_csv(docs, fp, annotation_name):
+            yield doc
 

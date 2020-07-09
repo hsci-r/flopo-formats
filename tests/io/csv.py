@@ -294,15 +294,14 @@ class ReadAnnotationTest(unittest.TestCase):
     }
 
     def test_read_from_csv(self):
-        corpus = Corpus()
-        corpus['99511266'] = \
-            WebAnnoTSVReader().read(io.StringIO(self.TEST_DOC))
+        docs = [WebAnnoTSVReader().read(io.StringIO(self.TEST_DOC))]
+        docs[0].doc_id = '99511266'
         for name, csv_content in self.TEST_ANN.items():
             fp = io.StringIO(csv_content)
-            read_annotation_from_csv(corpus, fp, name)
+            docs = list(read_annotation_from_csv(docs, fp, name))
 
         # test whether the annotations were read
-        doc = corpus['99511266']
+        doc = docs[0]
         #   NamedEntity
         self.assertEqual(len(doc.annotations['NamedEntity']), 3)
         self.assertIn(

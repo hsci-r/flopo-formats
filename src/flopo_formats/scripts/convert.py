@@ -60,22 +60,9 @@ def main():
         level=args.logging,
         format='%(asctime)s - %(levelname)s - %(message)s',
         datefmt='%Y-%m-%d %H:%M')
-    # FIXME TEMPORARY SOLUTION:
-    # if -a is not given, do document-based stream processing
-    # if -a is given, fall back to loading everything into memory, because
-    # document-wise processing is not yet implemented for annotations
-    if not args.annotations:
-        docs = read_docs(args.input_path, args.input_format, args.recursive)
-        write_docs(docs, args.output_path, args.output_format)
-    ##############################
-    else:
-        corpus = Corpus()
-        for doc in read_docs(args.input_path, args.input_format, args.recursive):
-            corpus[doc.doc_id] = doc
-        for a in args.annotations:
-            layer, filename = parse_annotation_source(a)
-            load_annotation_from_csv(corpus, filename, layer)
-        write_docs(
-            (corpus[doc_id] for doc_id in corpus),
-            args.output_path, args.output_format)
+    docs = read_docs(args.input_path, args.input_format, args.recursive)
+    for a in args.annotations:
+        layer, filename = parse_annotation_source(a)
+        docs = load_annotation_from_csv(docs, filename, layer)
+    write_docs(docs, args.output_path, args.output_format)
 
