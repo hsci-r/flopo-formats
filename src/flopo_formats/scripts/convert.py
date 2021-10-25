@@ -29,6 +29,8 @@ def parse_arguments():
         help='path to the input file or directory')
     parser.add_argument('-o', '--output-path', metavar='PATH',
         help='path to the output file or directory')
+    parser.add_argument('-n', '--max-docs-per-file', type=int, metavar='N',
+        help='split the output file to parts containing max. N documents')
     parser.add_argument('-r', '--recursive', default=False, action='store_true',
         help='in combination with -I, search also subdirectories')
     parser.add_argument(
@@ -64,5 +66,6 @@ def main():
     for a in args.annotations:
         layer, filename = parse_annotation_source(a)
         docs = load_annotation_from_csv(docs, filename, layer)
-    write_docs(docs, args.output_path, args.output_format)
+    write_docs(docs, args.output_path, args.output_format,
+               n = args.max_docs_per_file)
 

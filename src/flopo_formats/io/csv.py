@@ -247,3 +247,29 @@ def load_annotation_from_csv(docs, filename, annotation_name):
         for doc in read_annotation_from_csv(docs, fp, annotation_name):
             yield doc
 
+
+def write_split_csv(docs, path, n):
+    if not path.endswith('.csv'):
+        logging.warning(
+            'Output format is `csv`, but the output file didn\'t have .csv'
+            ' extension -> added it.')
+        path += '.csv'
+
+    # split CSV files into max. `n` documents
+    n_docs, n_file = 0, 0
+    fp, writer = None, None
+    try:
+        while True:
+            if n_docs % n == 0:
+                if fp is not None:
+                    fp.close()
+                n_file += 1
+                p = path.replace('.csv', '.{}.csv').format(n_file)
+                fp = open(p, 'w+')
+                writer = CSVCorpusWriter(fp)
+            writer.write(next(docs))
+            n_docs += 1
+    except StopIteration:
+        if fp is not None:
+            fp.close()
+

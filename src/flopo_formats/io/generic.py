@@ -3,7 +3,8 @@ import os
 import os.path
 
 from flopo_formats.io.conll import CoNLLCorpusReader
-from flopo_formats.io.csv import CSVCorpusReader, CSVCorpusWriter
+from flopo_formats.io.csv import \
+    CSVCorpusReader, CSVCorpusWriter, write_split_csv
 from flopo_formats.io.webannotsv import WebAnnoTSVReader, write_webanno_tsv
 from flopo_formats.io.prolog import write_prolog
 
@@ -57,7 +58,15 @@ def read_docs(path, _format, recursive):
 
 
 # FIXME rename parameters to: "path", "format"
-def write_docs(docs, path, _format):
+def write_docs(docs, path, _format, n = None):
+    if n is not None:
+        if _format == 'csv':
+            return write_split_csv(docs, path, n)
+        else:
+            logging.warning(
+                '-n option ignored -- only relevant for output format "csv"')
+
+    # normal writing - without splitting the output files
     if _format == 'csv':
         with open(path, 'w+') as fp:
             writer = CSVCorpusWriter(fp)

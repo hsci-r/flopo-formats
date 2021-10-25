@@ -51,6 +51,10 @@ Convert between different file formats used in FLOPO.
 - `-a`, `--annotations` -- a list of annotations to add, each having the
   format: `LAYER:FILE`, where `LAYER` is the name of the layer (for example
   'Hedging') and `FILE` is a CSV file.
+- `-n`, `--max-docs-pef-file` -- split the output file into parts containing 
+  max. `N` documents (CSV output format only)
+- `-r`, `--recursive` -- if reading input from a directory, search also
+  subdirectories
 - `-r`, `--recursive` -- if reading input from a directory, search also
   subdirectories
 
