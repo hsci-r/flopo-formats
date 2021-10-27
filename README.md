@@ -171,3 +171,26 @@ flopo-package \
 	-o kiky.zip -n 'Case KIKY'
 ```
 
+## `flopo-csv-merge-articles`
+
+This takes as input CoNLL-CSV files in which articles are divided into 
+stuctural blocks encoded in `articleId`s. For example instead of the article 
+with ID `2000004489163`, we have `2000004489163_title`, `2000004489163_ingress` 
+and `2000004489163_body` as separate documents, with paragraph and sentence IDs 
+starting from 1 in each.
+
+The script merges the parts into a single document and fixes the paragraph and 
+sentence IDs. It makes the following assumptions:
+- the part identifier begins after the first underscore; the article IDs must 
+  not contain underscores,
+- the different parts of one article follow each other in the input CSV.
+
+The information about parts is written into a separate CSV file with the 
+structure: `articleId,blockId,startParagraphId,endParagraphId`.
+
+### Arguments
+
+- `-i`, `--input-file` -- the input CSV file
+- `-o`, `--output-file` -- the output CSV file containing the documents
+- `-p`, `--parts-file` -- the CSV file to write the information about parts to
+

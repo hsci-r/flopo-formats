@@ -22,6 +22,7 @@ setup(
             'flopo-export    = flopo_formats.scripts.export:main',
             'flopo-eval      = flopo_formats.scripts.eval:main',
             'flopo-package   = flopo_formats.scripts.package:main',
+            'flopo-csv-merge-articles   = flopo_formats.scripts.csv_merge_articles:main',
         ]
     }
 )
