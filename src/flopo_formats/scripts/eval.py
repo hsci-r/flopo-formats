@@ -3,6 +3,7 @@ from collections import defaultdict
 import csv
 from operator import itemgetter
 import sys
+import warnings
 
 from flopo_formats.data import Annotation
 
@@ -86,7 +87,13 @@ def unfold_annotations(doc, anns):
     def _unfold_ann(results, a):
         i, j = a.start_sen-1, a.start_tok-1
         while i <= a.end_sen-1 and (i < a.end_sen-1 or j <= a.end_tok-1):
-            results[i][j] = a.features
+            if i < len(results) and j < len(results[i]):
+                results[i][j] = a.features
+            else:
+                # TODO the annotations exceed sentence boundaries?
+                # TODO raise an exception and print a warning higher in the code
+                if i >= len(results):
+                    break
             j += 1
             if j >= len(results[i]):
                 i += 1
