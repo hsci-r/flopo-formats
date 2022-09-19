@@ -75,7 +75,7 @@ def load_corpus(filename, only_doc_ids=None):
                     if cur_s_id is not None:
                         corpus[cur_doc_id].append(cur_sentence)
                     cur_doc_id, cur_s_id, cur_sentence = doc_id, s_id, []
-                cur_sentence.append(word)
+                cur_sentence.append(line)
         if cur_sentence:
             corpus[cur_doc_id].append(cur_sentence)
     return corpus
@@ -133,9 +133,9 @@ def print_detailed_results(doc_id, doc, results):
         string = []
         for (token, label) in zip(sentence, sen_results):
             if label is not None:
-                string.append('{}[{}]'.format(token, label))
+                string.append('{}[{}]'.format(token['word'], label))
             else:
-                string.append(token)
+                string.append(token['word'])
         print(' '.join(string))
         print()
 
@@ -154,10 +154,10 @@ def print_csv_results(writer, doc_id, doc, src_ann, tgt_ann, results, \
         writer.writerow(header_row)
     for i, (sen, sen_src_ann, sen_tgt_ann, sen_res) in \
             enumerate(zip(doc, src_ann, tgt_ann, results)):
-        for j, (word, src_ann, tgt_ann, res) in \
+        for j, (tok, src_ann, tgt_ann, res) in \
                 enumerate(zip(sen, sen_src_ann, sen_tgt_ann, sen_res)):
             if res is not None:
-                row = [doc_id, i+1, j+1, word, res]
+                row = [doc_id, i+1, j+1, tok['word'], res]
                 for f in features:
                     row.append(src_ann[f] if src_ann is not None else 'NA')
                     row.append(tgt_ann[f] if tgt_ann is not None else 'NA')
@@ -179,6 +179,9 @@ def parse_arguments():
     parser.add_argument(
         '-r', '--results-format',
         choices=['short', 'long', 'csv'], default='long')
+    parser.add_argument(
+        '--exclude-punct', action='store_true',
+        help='Exclude punctuation marks from evaluation metrics.')
     return parser.parse_args()
 
 
@@ -206,11 +209,12 @@ def main():
                 writer, doc_id, corpus[doc_id], doc_src_anns, doc_tgt_anns,
                 results, features, first)
             first = False
-        for sen_results in results:
-            for r in sen_results:
-                tp += int(r == 'TP')
-                fp += int(r == 'FP')
-                fn += int(r == 'FN')
+        for i, sen_results in enumerate(results):
+            for j, r in enumerate(sen_results):
+                if not args.exclude_punct or corpus[doc_id][i][j]['upos'] != 'PUNCT':
+                    tp += int(r == 'TP')
+                    fp += int(r == 'FP')
+                    fn += int(r == 'FN')
     if args.results_format in ['short', 'long']:
         pre = tp / (tp + fp)
         rec = tp / (tp + fn)
