@@ -107,45 +107,64 @@ def unfold_annotations(doc, anns):
     return results
 
 
-def compare_annotations(src_anns, tgt_anns):
+def compare_annotations(src_anns, tgt_anns, feature=None):
+
+    def _get_feature_value(ann, feature):
+        if ann is None:
+            return None
+        elif feature is None:
+            return True
+        else:
+            return ann[feature]
+
     results = []
     for sen_src_ann, sen_tgt_ann in zip(src_anns, tgt_anns):
         sen_results = []
         for src_ann, tgt_ann in zip(sen_src_ann, sen_tgt_ann):
-            if src_ann is not None and tgt_ann is not None:
-                sen_results.append('TP')
-            elif src_ann is not None:
-                sen_results.append('FP')
-            elif tgt_ann is not None:
-                sen_results.append('FN')
+            result = {
+                'srcValue': _get_feature_value(src_ann, feature),
+                'tgtValue': _get_feature_value(tgt_ann, feature),
+                'TP': 0, 'FP': 0, 'FN': 0
+            }
+            if result['srcValue'] == result['tgtValue']:
+                result['TP'] = int(result['tgtValue'] is not None)
             else:
-                sen_results.append(None)
+                result['FP'] = int(result['srcValue'] is not None)
+                result['FN'] = int(result['tgtValue'] is not None)
+            sen_results.append(result)
         results.append(sen_results)
     return results
         
 
-def print_detailed_results(doc_id, doc, results):
+def print_detailed_results(doc_id, doc, results, print_all=True):
 
     def _print_sentence_results(s_id, sentence, sen_results):
         print('doc_id={} s_id={} TP={} FP={} FN={}'.format(
-            doc_id, s_id, sen_results.count('TP'), sen_results.count('FP'),
-            sen_results.count('FN')))
+            doc_id, s_id,
+            sum(r['TP'] for r in sen_results),
+            sum(r['FP'] for r in sen_results),
+            sum(r['FN'] for r in sen_results)))
         string = []
-        for (token, label) in zip(sentence, sen_results):
-            if label is not None:
-                string.append('{}[{}]'.format(token['word'], label))
+        for (token, r) in zip(sentence, sen_results):
+            label = '+'.join([x for x in ['TP', 'FP', 'FN'] if r[x] > 0])
+            value = r['tgtValue'] if label in ('TP', 'FN') \
+                    else r['srcValue'] if label == 'FP' \
+                    else '{},{}'.format(r['srcValue'], r['tgtValue'])
+            if label:
+                string.append('{}[{},{}]'.format(token['word'], label, value))
             else:
                 string.append(token['word'])
         print(' '.join(string))
         print()
 
     for i, s in enumerate(doc):
-        if any(x is not None for x in results[i]):
-            _print_sentence_results(i, s, results[i])
+        if print_all or any(r['TP']+r['FP']+r['FN'] > 0 for r in results[i]):
+            _print_sentence_results(i+1, s, results[i])
 
 
 def print_csv_results(writer, doc_id, doc, src_ann, tgt_ann, results, \
                       features, header=False):
+# FIXME adjust to the new format of the results
     if header:
         header_row = ['articleId', 'sentenceId', 'wordId', 'word', 'result']
         for f in features:
@@ -177,6 +196,9 @@ def parse_arguments():
         '-c', '--corpus-file',
         help='corpus file')
     parser.add_argument(
+        '-f', '--feature', metavar='FEATURE',
+        help='Evaluate classes separately according to the feature.')
+    parser.add_argument(
         '-r', '--results-format',
         choices=['short', 'long', 'csv'], default='long')
     parser.add_argument(
@@ -194,14 +216,14 @@ def main():
     features = tuple(sorted(list(set(input_ann_feats) & set(gs_ann_feats))))
     corpus = None
     corpus = load_corpus(args.corpus_file, only_doc_ids=doc_ids)
-    tp, fp, fn = 0, 0, 0
+    tp, fp, fn = defaultdict(lambda: 0), defaultdict(lambda: 0), defaultdict(lambda: 0)
     writer = csv.writer(sys.stdout, lineterminator='\n') \
              if args.results_format == 'csv' else None
     first = True
     for doc_id in sorted(doc_ids):
         doc_src_anns = unfold_annotations(corpus[doc_id], input_anns[doc_id])
         doc_tgt_anns = unfold_annotations(corpus[doc_id], gs_anns[doc_id])
-        results = compare_annotations(doc_src_anns, doc_tgt_anns)
+        results = compare_annotations(doc_src_anns, doc_tgt_anns, feature=args.feature)
         if args.results_format == 'long':
             print_detailed_results(doc_id, corpus[doc_id], results)
         elif args.results_format == 'csv':
@@ -212,12 +234,18 @@ def main():
         for i, sen_results in enumerate(results):
             for j, r in enumerate(sen_results):
                 if not args.exclude_punct or corpus[doc_id][i][j]['upos'] != 'PUNCT':
-                    tp += int(r == 'TP')
-                    fp += int(r == 'FP')
-                    fn += int(r == 'FN')
+                    if r['srcValue'] is not None:
+                        fp[r['srcValue']] += r['FP']
+                    if r['tgtValue'] is not None:
+                        tp[r['tgtValue']] += r['TP']
+                        fn[r['tgtValue']] += r['FN']
     if args.results_format in ['short', 'long']:
-        pre = tp / (tp + fp)
-        rec = tp / (tp + fn)
-        fsc = 2 / (1/pre + 1/rec) if pre*rec > 0 else 0
-        print(tp, fp, fn, pre, rec, fsc)
+        keys = set(tp.keys()) | set(fp.keys()) | set(fn.keys())
+        for key in keys:
+            pre = tp[key] / (tp[key] + fp[key]) \
+                  if (tp[key] + fp[key]) > 0 else 0
+            rec = tp[key] / (tp[key] + fn[key]) \
+                  if (tp[key] + fn[key]) > 0 else 0
+            fsc = 2 / (1/pre + 1/rec) if pre*rec > 0 else 0
+            print(key, tp[key], fp[key], fn[key], pre, rec, fsc)
 
