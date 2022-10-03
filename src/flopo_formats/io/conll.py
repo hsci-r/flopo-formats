@@ -88,4 +88,5 @@ class CoNLLCorpusReader(CSVCorpusReader):
                 self.doc = None
         self._finalize_document(force=True)
         yield self.doc
+        self.doc = None
 
